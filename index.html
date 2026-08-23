@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="AlphaLine"/>
+<meta name="theme-color" content="#0B0F19"/>
+<meta name="description" content="AlphaLine — one guided plan from capital to a catalyst-aware, backtested strategy."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"/>
+<title>AlphaLine</title>
+<style>
+:root{
+  --ink:#0B0F19; --paper:#F6F7FA; --p1:#ffffff;
+  --line:#3B5BFF; --line-dim:#E7EBFF;
+  --alpha:#C9A24B; --alpha-dim:#F5EEDD;
+  --mist:#E4E7EE; --sub:#5B6478; --muted:#9BA2B4;
+  --green:#1A8754; --red:#C4342F;
+  --font-display:'Fraunces', Georgia, serif;
+  --font-body:'IBM Plex Sans', -apple-system, sans-serif;
+  --font-mono:'IBM Plex Mono', 'SF Mono', monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-tap-highlight-color:transparent;}
+body{
+  background:var(--paper); color:var(--ink); font-family:var(--font-body);
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  min-height:100vh; overflow-x:hidden;
+}
+button{font-family:inherit;cursor:pointer;touch-action:manipulation;background:none;border:none;}
+input{font-family:inherit;}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+
+.app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:0 18px 40px;}
+
+/* ── SIGNATURE: ascending progress line ── */
+.rail{padding:16px 0 10px;position:sticky;top:0;background:var(--paper);z-index:20;}
+.rail-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.rail-brand{display:flex;align-items:center;gap:7px;}
+.rail-mark{width:29px;height:29px;flex-shrink:0;}
+.rail-word{font-family:var(--font-display);font-size:20px;font-weight:700;letter-spacing:-.015em;}
+.rail-word em{font-style:normal;color:var(--line);}
+.rail-step-lbl{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);font-weight:500;letter-spacing:.02em;}
+.rail-svg-wrap{width:100%;height:34px;}
+.rail-line-bg{stroke:var(--mist);stroke-width:2;fill:none;}
+.rail-line-fg{stroke:var(--line);stroke-width:2.5;fill:none;stroke-linecap:round;transition:stroke-dasharray .5s cubic-bezier(.4,0,.2,1);}
+.rail-dot{fill:var(--paper);stroke:var(--line);stroke-width:2.5;transition:cx .5s cubic-bezier(.4,0,.2,1), cy .5s cubic-bezier(.4,0,.2,1);}
+.rail-dot-core{fill:var(--line);transition:cx .5s cubic-bezier(.4,0,.2,1), cy .5s cubic-bezier(.4,0,.2,1);}
+
+/* ── SCENES ── */
+.scene{display:none;flex:1;flex-direction:column;padding-top:6px;animation:sceneIn .35s cubic-bezier(.2,.6,.3,1);}
+.scene.active{display:flex;}
+@keyframes sceneIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+.eyebrow{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--line);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
+.scene-h1{font-family:var(--font-display);font-size:27px;font-weight:600;letter-spacing:-.015em;line-height:1.15;margin-bottom:8px;}
+.scene-h1 em{font-style:normal;color:var(--line);}
+.scene-sub{font-size:13.5px;color:var(--sub);line-height:1.55;margin-bottom:22px;max-width:38ch;}
+
+/* ── HERO (scene 0) ── */
+.hero-mark{width:84px;height:84px;margin-bottom:24px;}
+.hero-title{font-family:var(--font-display);font-size:40px;font-weight:600;letter-spacing:-.02em;line-height:1.05;margin-bottom:14px;}
+.hero-title em{font-style:normal;color:var(--line);}
+.hero-sub{font-size:15px;color:var(--sub);line-height:1.6;margin-bottom:8px;max-width:34ch;}
+.hero-steps{margin:26px 0;display:flex;flex-direction:column;gap:14px;}
+.hero-step{display:flex;align-items:baseline;gap:12px;}
+.hero-step-n{font-family:var(--font-mono);font-size:12px;color:var(--line);font-weight:600;flex-shrink:0;width:20px;}
+.hero-step-t{font-size:13.5px;color:var(--ink);font-weight:500;}
+.hero-step-t b{font-weight:700;}
+
+/* ── FORM ELEMENTS ── */
+.field-group{margin-bottom:20px;}
+.field-label{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:block;}
+.money-input-wrap{position:relative;}
+.money-input-wrap::before{content:'$';position:absolute;left:16px;top:50%;transform:translateY(-50%);font-family:var(--font-mono);font-size:20px;font-weight:600;color:var(--muted);}
+.money-input{width:100%;background:var(--p1);border:1.5px solid var(--mist);border-radius:12px;padding:16px 16px 16px 32px;font-family:var(--font-mono);font-size:22px;font-weight:600;color:var(--ink);outline:none;transition:border-color .15s;}
+.money-input:focus{border-color:var(--line);}
+.plain-input{width:100%;background:var(--p1);border:1.5px solid var(--mist);border-radius:10px;padding:12px 14px;font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--ink);outline:none;transition:border-color .15s;}
+.plain-input:focus{border-color:var(--line);}
+
+/* ── TIER BLOCK (compact — one block, not three cards) ── */
+.tier-block{background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:6px;}
+.tier-seg{display:flex;gap:4px;margin-bottom:2px;}
+.tier-seg-btn{flex:1;padding:10px 6px;border-radius:9px;font-size:12.5px;font-weight:700;color:var(--sub);text-align:center;transition:background .15s,color .15s;}
+.tier-seg-btn.on{color:#fff;}
+.tier-detail{padding:14px 12px 12px;}
+.tier-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+.tier-name{font-family:var(--font-display);font-size:16px;font-weight:600;}
+.tier-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;}
+.tier-sub{font-size:11.5px;color:var(--sub);line-height:1.5;}
+.tier-mix{display:flex;gap:3px;margin-top:11px;height:6px;border-radius:3px;overflow:hidden;}
+.tier-mix-lbls{display:flex;justify-content:space-between;margin-top:6px;font-family:var(--font-mono);font-size:10px;color:var(--muted);font-weight:600;}
+
+/* ── SPLIT SLIDERS ── */
+.split-row{margin-bottom:18px;}
+.split-hd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;}
+.split-name{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:7px;}
+.split-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.split-val{font-family:var(--font-mono);font-size:15px;font-weight:700;}
+.split-slider{width:100%;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:var(--mist);outline:none;}
+.split-slider::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--p1);border:3px solid var(--line);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.15);}
+.split-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:16px 0 4px;background:var(--mist);}
+.split-warn{font-size:11.5px;color:var(--red);font-weight:600;margin-top:6px;display:none;}
+
+/* ── BUTTONS ── */
+.btn-row{display:flex;gap:10px;margin-top:auto;padding-top:24px;}
+.btn{flex:1;padding:15px;border-radius:12px;font-size:14.5px;font-weight:700;text-align:center;transition:transform .1s, opacity .15s;}
+.btn:active{transform:scale(.98);}
+.btn-primary{background:var(--ink);color:#fff;}
+.btn-primary:disabled{opacity:.35;pointer-events:none;}
+.btn-ghost{background:none;color:var(--sub);border:1.5px solid var(--mist);flex:0 0 auto;padding:15px 20px;}
+.btn-alpha{background:linear-gradient(135deg,var(--alpha),#B8923D);color:#fff;}
+
+/* ── FREQUENCY SHEET ── */
+.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(11,15,25,.5);z-index:100;align-items:flex-end;}
+.sheet-overlay.open{display:flex;}
+.sheet{background:var(--paper);width:100%;max-width:480px;margin:0 auto;border-radius:20px 20px 0 0;padding:10px 18px 28px;max-height:70vh;overflow-y:auto;}
+.sheet-handle{width:36px;height:4px;background:var(--mist);border-radius:2px;margin:6px auto 16px;}
+.sheet-title{font-family:var(--font-display);font-size:19px;font-weight:600;margin-bottom:14px;}
+.sheet-opt{display:flex;align-items:center;justify-content:space-between;padding:14px 2px;border-bottom:1px solid var(--mist);cursor:pointer;}
+.sheet-opt:last-child{border-bottom:none;}
+.sheet-opt-name{font-size:15px;font-weight:600;}
+.sheet-opt-sub{font-size:11.5px;color:var(--muted);margin-top:2px;}
+.sheet-check{color:var(--line);font-size:17px;font-weight:700;}
+
+/* ── STAT CARD ── */
+.stat-card{background:var(--ink);color:#fff;border-radius:16px;padding:20px;margin-bottom:16px;}
+.stat-card-lbl{font-family:var(--font-mono);font-size:10.5px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.stat-card-val{font-family:var(--font-display);font-size:34px;font-weight:600;letter-spacing:-.01em;}
+.stat-card-val .cents{font-size:19px;color:rgba(255,255,255,.5);}
+.stat-card-sub{font-size:12px;color:rgba(255,255,255,.6);margin-top:8px;}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIGNATURE ASCENDING PROGRESS LINE -->
+  <div class="rail">
+    <div class="rail-top">
+      <div class="rail-brand">
+        <svg class="rail-mark" viewBox="0 0 24 24" fill="none">
+          <path d="M2 18L8 11L13 15L22 4" stroke="#3B5BFF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="22" cy="4" r="3" fill="#C9A24B"/>
+        </svg>
+        <span class="rail-word">Alpha<em>Line</em></span>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span class="rail-step-lbl" id="rail-step-lbl">START</span>
+        <button onclick="openAlSettings()" style="color:var(--muted);font-size:16px;padding:2px 4px;margin-left:8px;">⚙</button>
+      </div>
+    </div>
+    <svg class="rail-svg-wrap" viewBox="0 0 400 34" preserveAspectRatio="none">
+      <path class="rail-line-bg" d="M4 28 L100 22 L200 16 L300 10 L396 4"/>
+      <path class="rail-line-fg" id="rail-line-fg" d="M4 28 L100 22 L200 16 L300 10 L396 4" stroke-dasharray="0 600"/>
+      <circle class="rail-dot" id="rail-dot" cx="4" cy="28" r="6"/>
+      <circle class="rail-dot-core" id="rail-dot-core" cx="4" cy="28" r="2.5"/>
+    </svg>
+  </div>
+
+  <!-- SCENE 0: HERO -->
+  <section class="scene active" id="scene-0">
+    <svg class="hero-mark" viewBox="0 0 24 24" fill="none">
+      <path d="M2 18L8 11L13 15L22 4" stroke="#3B5BFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="22" cy="4" r="3" fill="#C9A24B"/>
+    </svg>
+    <h1 class="hero-title">One plan.<br/>Built in <em>order</em>.</h1>
+    <p class="hero-sub">Capital, risk, split, timeline, a backtest, and real catalysts — one guided line from start to a plan you can act on.</p>
+    <div class="hero-steps">
+      <div class="hero-step"><span class="hero-step-n">01</span><span class="hero-step-t">Capital & <b>risk tier</b></span></div>
+      <div class="hero-step"><span class="hero-step-n">02</span><span class="hero-step-t">Split across <b>stocks, ETFs, options</b></span></div>
+      <div class="hero-step"><span class="hero-step-n">03</span><span class="hero-step-t">Timeline & <b>target</b></span></div>
+      <div class="hero-step"><span class="hero-step-n">04</span><span class="hero-step-t">Simulated <b>backtest</b> of the plan</span></div>
+      <div class="hero-step"><span class="hero-step-n">05</span><span class="hero-step-t">Catalyst-aware <b>picks</b>, AI-researched</span></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="goToStep(1)">Begin</button>
+    </div>
+  </section>
+
+  <!-- SCENE 1: CAPITAL & RISK TIER -->
+  <section class="scene" id="scene-1">
+    <div class="eyebrow">Step 01</div>
+    <h2 class="scene-h1">What are you <em>starting</em> with?</h2>
+    <p class="scene-sub">Your capital and how much risk you're comfortable carrying — everything downstream is sized from this.</p>
+
+    <div class="field-group">
+      <label class="field-label">Total Capital</label>
+      <div class="money-input-wrap">
+        <input type="number" class="money-input" id="al-capital" value="25000" step="500" inputmode="decimal"/>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Risk Tier</label>
+      <div class="tier-block">
+        <div class="tier-seg" id="tier-seg"></div>
+        <div id="tier-detail"></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goToStep(0)">Back</button>
+      <button class="btn btn-primary" onclick="goToStep(2)">Continue</button>
+    </div>
+  </section>
+
+  <!-- SCENE 2: DIVERSIFIED SPLIT -->
+  <section class="scene" id="scene-2">
+    <div class="eyebrow">Step 02</div>
+    <h2 class="scene-h1">Split it <em>across</em> three lanes.</h2>
+    <p class="scene-sub">Started from your risk tier's default mix — adjust any of the three, the others rebalance to keep it at 100%.</p>
+
+    <div class="split-bar" id="split-bar"></div>
+
+    <div class="split-row">
+      <div class="split-hd"><span class="split-name"><span class="split-dot" style="background:#3B5BFF"></span>Stocks</span><span class="split-val mono" id="split-stock-val">40%</span></div>
+      <input type="range" class="split-slider" id="split-stock" min="0" max="100" value="40" oninput="splitChanged('stock')"/>
+    </div>
+    <div class="split-row">
+      <div class="split-hd"><span class="split-name"><span class="split-dot" style="background:#1A8754"></span>ETFs</span><span class="split-val mono" id="split-etf-val">40%</span></div>
+      <input type="range" class="split-slider" id="split-etf" min="0" max="100" value="40" oninput="splitChanged('etf')"/>
+    </div>
+    <div class="split-row">
+      <div class="split-hd"><span class="split-name"><span class="split-dot" style="background:#C9A24B"></span>Options</span><span class="split-val mono" id="split-option-val">20%</span></div>
+      <input type="range" class="split-slider" id="split-option" min="0" max="100" value="20" oninput="splitChanged('option')"/>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goToStep(1)">Back</button>
+      <button class="btn btn-primary" onclick="goToStep(3)">Continue</button>
+    </div>
+  </section>
+
+  <!-- SCENE 3: TIMELINE & TARGET -->
+  <section class="scene" id="scene-3">
+    <div class="eyebrow">Step 03</div>
+    <h2 class="scene-h1">Set the <em>timeline</em>.</h2>
+    <p class="scene-sub">How long you're running this plan, and what you're aiming for by the end.</p>
+
+    <div class="field-group">
+      <label class="field-label">Duration (years)</label>
+      <input type="number" class="plain-input" id="al-duration" value="2" step="0.5" min="0.25"/>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Target Return (annualized %)</label>
+      <input type="number" class="plain-input" id="al-target" value="25" step="1" min="1"/>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Rebalance / Compounding Frequency</label>
+      <button type="button" id="freq-btn" onclick="openFreqSheet()" style="width:100%;background:var(--p1);border:1.5px solid var(--mist);border-radius:10px;padding:13px 14px;font-size:14px;font-weight:600;color:var(--ink);display:flex;align-items:center;justify-content:space-between;">
+        <span id="freq-label">Monthly (12)</span>
+        <span style="color:var(--muted);">▾</span>
+      </button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goToStep(2)">Back</button>
+      <button class="btn btn-primary" onclick="goToStep(4)">Continue</button>
+    </div>
+  </section>
+
+  <!-- SCENE 4: BACKTEST (placeholder, built next) -->
+  <section class="scene" id="scene-4">
+    <div class="eyebrow">Step 04</div>
+    <h2 class="scene-h1">Run the <em>backtest</em>.</h2>
+    <p class="scene-sub">A statistical simulation of your plan — not a claim about real historical trades, but a grounded model of how this mix and timeline behaves.</p>
+    <div id="backtest-mount"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goToStep(3)">Back</button>
+      <button class="btn btn-primary" id="backtest-continue-btn" onclick="goToStep(5)" disabled>Continue</button>
+    </div>
+  </section>
+
+  <!-- SCENE 5: CATALYST PICKS (placeholder, built next) -->
+  <section class="scene" id="scene-5">
+    <div class="eyebrow">Step 05</div>
+    <h2 class="scene-h1">Catalyst-aware <em>picks</em>.</h2>
+    <p class="scene-sub">AI-researched, grounded in a live web search — sized to your split and tier.</p>
+    <div id="picks-mount"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goToStep(4)">Back</button>
+      <button class="btn btn-primary" onclick="goToStep(6)">See Full Plan</button>
+    </div>
+  </section>
+
+  <!-- SCENE 6: SUMMARY (placeholder, built next) -->
+  <section class="scene" id="scene-6">
+    <div class="eyebrow">Your Plan</div>
+    <h2 class="scene-h1">Ready to <em>run</em>.</h2>
+    <div id="summary-mount"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goToStep(5)">Back</button>
+      <button class="btn btn-primary" id="save-plan-btn" onclick="saveAlPlan()">Save Plan</button>
+    </div>
+  </section>
+
+</div>
+
+<!-- Frequency bottom sheet -->
+<div class="sheet-overlay" id="freqSheetOverlay" onclick="if(event.target===this)closeFreqSheet()">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Rebalancing Frequency</div>
+    <div id="freq-options"></div>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="alSettingsOverlay" onclick="if(event.target===this)closeAlSettings()">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Settings</div>
+    <div class="field-group">
+      <label class="field-label">Anthropic API Key</label>
+      <input type="password" class="plain-input" id="al-set-ai" placeholder="sk-ant-..." autocomplete="off"/>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Finnhub API Key (optional — verifies pick prices live)</label>
+      <input type="password" class="plain-input" id="al-set-fh" placeholder="e.g. c1234..." autocomplete="off"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;" onclick="saveAlSettings()">Save</button>
+    <div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:12px;">Stored locally in your browser only. <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--line);">Get an Anthropic key →</a> · <a href="https://finnhub.io/register" target="_blank" style="color:var(--line);">Get a free Finnhub key →</a></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// STEP NAVIGATION + SIGNATURE PROGRESS LINE
+// ══════════════════════════════════════
+var CURRENT_STEP = 0;
+var TOTAL_STEPS = 6;
+var STEP_LABELS = ['START','CAPITAL & TIER','SPLIT','TIMELINE','BACKTEST','PICKS','PLAN'];
+
+// Points along the rail path — must match the SVG path's actual geometry
+var RAIL_POINTS = [
+  {x:4,y:28},{x:82,y:23.5},{x:160,y:19},{x:238,y:14.5},{x:316,y:10},{x:396,y:4}
+];
+
+function goToStep(n){
+  if(n<0||n>=TOTAL_STEPS+1)return;
+  document.querySelectorAll('.scene').forEach(function(s){s.classList.remove('active');});
+  document.getElementById('scene-'+n).classList.add('active');
+  CURRENT_STEP = n;
+  document.getElementById('rail-step-lbl').textContent = n===0 ? 'START' : ('STEP '+n+'/'+TOTAL_STEPS);
+  updateRail(n);
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(n===2) renderSplitBar();
+  if(n===1) renderTierCards();
+  if(n===4) runBacktestAndRender();
+  if(n===5 && !PICKS_LOADED) renderPicksIntro();
+  if(n===6) renderSummary();
+}
+
+function updateRail(n){
+  var idx = Math.min(n, RAIL_POINTS.length-1);
+  var pt = RAIL_POINTS[idx];
+  var path = document.getElementById('rail-line-fg');
+  var totalLen = path.getTotalLength();
+  var frac = idx/(RAIL_POINTS.length-1);
+  path.setAttribute('stroke-dasharray', (totalLen*frac)+' '+totalLen);
+  document.getElementById('rail-dot').setAttribute('cx',pt.x);
+  document.getElementById('rail-dot').setAttribute('cy',pt.y);
+  document.getElementById('rail-dot-core').setAttribute('cx',pt.x);
+  document.getElementById('rail-dot-core').setAttribute('cy',pt.y);
+}
+
+// ══════════════════════════════════════
+// STEP 1: CAPITAL & RISK TIER
+// ══════════════════════════════════════
+var TIERS = [
+  {key:'conservative', name:'Conservative', badge:'LOWER SWING', color:'#1A8754', bg:'#EAF6EF',
+   sub:'Capital preservation first. Mostly index exposure, options used sparingly for income.',
+   mix:{stock:20,etf:65,option:15}},
+  {key:'moderate', name:'Moderate', badge:'BALANCED', color:'#3B5BFF', bg:'#EEF1FF',
+   sub:'A working balance of growth and income across all three lanes.',
+   mix:{stock:40,etf:40,option:20}},
+  {key:'aggressive', name:'Aggressive', badge:'WIDER SWING', color:'#C9A24B', bg:'#FBF3E2',
+   sub:'Growth-first. Heavier options weighting for leverage — wider potential swings both ways.',
+   mix:{stock:35,etf:20,option:45}}
+];
+var SELECTED_TIER = 'moderate';
+
+function renderTierCards(){
+  var seg = document.getElementById('tier-seg');
+  var detail = document.getElementById('tier-detail');
+  var t = TIERS.filter(function(x){return x.key===SELECTED_TIER;})[0];
+
+  seg.innerHTML = TIERS.map(function(x){
+    var on = x.key===SELECTED_TIER;
+    return '<button type="button" class="tier-seg-btn'+(on?' on':'')+'" style="'+(on?'background:'+x.color:'')+'" onclick="selectTier(\''+x.key+'\')">'+x.name+'</button>';
+  }).join('');
+
+  detail.innerHTML =
+    '<div class="tier-hd"><span class="tier-name">'+t.name+'</span><span class="tier-badge" style="background:'+t.bg+';color:'+t.color+'">'+t.badge+'</span></div>'
+    + '<div class="tier-sub">'+t.sub+'</div>'
+    + '<div class="tier-mix">'
+      + '<div style="width:'+t.mix.stock+'%;background:#3B5BFF"></div>'
+      + '<div style="width:'+t.mix.etf+'%;background:#1A8754"></div>'
+      + '<div style="width:'+t.mix.option+'%;background:#C9A24B"></div>'
+    + '</div>'
+    + '<div class="tier-mix-lbls"><span>Stocks '+t.mix.stock+'%</span><span>ETFs '+t.mix.etf+'%</span><span>Options '+t.mix.option+'%</span></div>';
+}
+
+function selectTier(key){
+  SELECTED_TIER = key;
+  var t = TIERS.filter(function(x){return x.key===key;})[0];
+  document.getElementById('split-stock').value = t.mix.stock;
+  document.getElementById('split-etf').value = t.mix.etf;
+  document.getElementById('split-option').value = t.mix.option;
+  renderTierCards();
+}
+
+// ══════════════════════════════════════
+// STEP 2: DIVERSIFIED SPLIT (auto-rebalancing sliders)
+// ══════════════════════════════════════
+function splitChanged(changed){
+  var ids = {stock:'split-stock', etf:'split-etf', option:'split-option'};
+  var vals = {};
+  Object.keys(ids).forEach(function(k){ vals[k] = parseFloat(document.getElementById(ids[k]).value)||0; });
+
+  var others = Object.keys(ids).filter(function(k){return k!==changed;});
+  var sumOthers = others.reduce(function(s,k){return s+vals[k];},0);
+  var remaining = 100 - vals[changed];
+
+  if(sumOthers>0){
+    others.forEach(function(k){
+      vals[k] = Math.round(remaining * (vals[k]/sumOthers));
+    });
+  } else {
+    // both others were at 0 — split the remainder evenly
+    others.forEach(function(k){ vals[k] = Math.round(remaining/others.length); });
+  }
+  // Fix any rounding drift so it always sums to exactly 100
+  var drift = 100 - (vals[changed]+vals[others[0]]+vals[others[1]]);
+  vals[others[0]] += drift;
+
+  Object.keys(ids).forEach(function(k){
+    document.getElementById(ids[k]).value = vals[k];
+    document.getElementById('split-'+k+'-val').textContent = vals[k]+'%';
+  });
+  renderSplitBar();
+}
+
+function renderSplitBar(){
+  var stock = parseFloat(document.getElementById('split-stock').value)||0;
+  var etf = parseFloat(document.getElementById('split-etf').value)||0;
+  var option = parseFloat(document.getElementById('split-option').value)||0;
+  document.getElementById('split-bar').innerHTML =
+    '<div style="width:'+stock+'%;background:#3B5BFF"></div>'
+    +'<div style="width:'+etf+'%;background:#1A8754"></div>'
+    +'<div style="width:'+option+'%;background:#C9A24B"></div>';
+  document.getElementById('split-stock-val').textContent = stock+'%';
+  document.getElementById('split-etf-val').textContent = etf+'%';
+  document.getElementById('split-option-val').textContent = option+'%';
+}
+
+function getCurrentSplit(){
+  return {
+    stock: (parseFloat(document.getElementById('split-stock').value)||0)/100,
+    etf: (parseFloat(document.getElementById('split-etf').value)||0)/100,
+    option: (parseFloat(document.getElementById('split-option').value)||0)/100
+  };
+}
+
+// ══════════════════════════════════════
+// STEP 3: TIMELINE & FREQUENCY
+// ══════════════════════════════════════
+var FREQ_OPTIONS = [
+  {key:'monthly', label:'Monthly', sub:'12 times a year', periodsPerYear:12},
+  {key:'quarterly', label:'Quarterly', sub:'4 times a year', periodsPerYear:4},
+  {key:'weekly', label:'Weekly', sub:'52 times a year', periodsPerYear:52},
+  {key:'annually', label:'Annually', sub:'Once a year', periodsPerYear:1}
+];
+var SELECTED_FREQ = FREQ_OPTIONS[0];
+
+function openFreqSheet(){
+  var mount = document.getElementById('freq-options');
+  mount.innerHTML = FREQ_OPTIONS.map(function(f){
+    var on = f.key===SELECTED_FREQ.key;
+    return '<div class="sheet-opt" onclick="selectFreq(\''+f.key+'\')">'
+      + '<div><div class="sheet-opt-name">'+f.label+'</div><div class="sheet-opt-sub">'+f.sub+'</div></div>'
+      + (on?'<span class="sheet-check">✓</span>':'')
+    + '</div>';
+  }).join('');
+  document.getElementById('freqSheetOverlay').classList.add('open');
+}
+function closeFreqSheet(){ document.getElementById('freqSheetOverlay').classList.remove('open'); }
+function selectFreq(key){
+  SELECTED_FREQ = FREQ_OPTIONS.filter(function(f){return f.key===key;})[0];
+  document.getElementById('freq-label').textContent = SELECTED_FREQ.label+' ('+SELECTED_FREQ.periodsPerYear+')';
+  closeFreqSheet();
+}
+
+// ══════════════════════════════════════
+// STEP 4: BACKTEST — Monte Carlo simulation
+// ══════════════════════════════════════
+// Asset-class assumptions (annualized). These are broad, defensible planning
+// assumptions — not fitted to any specific historical window. rho = how
+// correlated each lane is to a shared market factor (used to keep the three
+// lanes moving somewhat together, not fully independent).
+var ASSET_ASSUMPTIONS = {
+  stock:  {mean:0.10, vol:0.18, rho:0.90, label:'Stocks'},
+  etf:    {mean:0.09, vol:0.15, rho:0.95, label:'ETFs'},
+  option: {mean:0.15, vol:0.28, rho:0.70, label:'Options'}
+};
+
+function randNorm(){
+  var u=0,v=0;
+  while(u===0)u=Math.random();
+  while(v===0)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+function runBacktest(weights, periodsPerYear, totalPeriods, initialCapital, numPaths){
+  var finals = [];
+  var allPaths = []; // keep a small sample of paths for the fan chart
+  var sampleEvery = Math.max(1, Math.floor(numPaths/40));
+  for(var p=0; p<numPaths; p++){
+    var capital = initialCapital;
+    var path = [capital];
+    for(var t=0; t<totalPeriods; t++){
+      var marketZ = randNorm();
+      var periodReturn = 0;
+      Object.keys(ASSET_ASSUMPTIONS).forEach(function(k){
+        var w = weights[k];
+        if(w<=0) return;
+        var a = ASSET_ASSUMPTIONS[k];
+        var idioZ = randNorm();
+        var z = a.rho*marketZ + Math.sqrt(1-a.rho*a.rho)*idioZ;
+        var periodMean = a.mean/periodsPerYear;
+        var periodVol = a.vol/Math.sqrt(periodsPerYear);
+        periodReturn += w*(periodMean + periodVol*z);
+      });
+      capital = Math.max(0, capital*(1+periodReturn));
+      path.push(capital);
+    }
+    finals.push(capital);
+    if(p%sampleEvery===0) allPaths.push(path);
+  }
+  finals.sort(function(a,b){return a-b;});
+  return {finals:finals, samplePaths:allPaths};
+}
+
+function percentile(sorted, p){
+  var idx = Math.floor(sorted.length*p);
+  return sorted[Math.min(idx, sorted.length-1)];
+}
+
+var LAST_BACKTEST = null;
+
+function runBacktestAndRender(){
+  var capital = parseFloat(document.getElementById('al-capital').value)||25000;
+  var duration = parseFloat(document.getElementById('al-duration').value)||2;
+  var targetPct = parseFloat(document.getElementById('al-target').value)||25;
+  var periodsPerYear = SELECTED_FREQ.periodsPerYear;
+  var totalPeriods = Math.max(1, Math.round(duration*periodsPerYear));
+  var weights = getCurrentSplit();
+
+  var mount = document.getElementById('backtest-mount');
+  mount.innerHTML = '<div style="text-align:center;padding:30px 0;color:var(--sub);font-size:13px;">Running 1,500 simulated paths…</div>';
+
+  setTimeout(function(){
+    var result = runBacktest(weights, periodsPerYear, totalPeriods, capital, 1500);
+    LAST_BACKTEST = result;
+    var finals = result.finals;
+    var p10 = percentile(finals,0.10), p50 = percentile(finals,0.50), p90 = percentile(finals,0.90);
+    var targetCapital = capital*Math.pow(1+targetPct/100, duration);
+    var hitCount = finals.filter(function(f){return f>=targetCapital;}).length;
+    var hitProb = (hitCount/finals.length*100);
+
+    var fanSvg = buildFanChart(result.samplePaths, capital, targetCapital);
+
+    mount.innerHTML =
+      '<div class="stat-card">'
+      + '<div class="stat-card-lbl">Median Outcome · '+duration+'yr</div>'
+      + '<div class="stat-card-val mono">$'+Math.round(p50).toLocaleString()+'</div>'
+      + '<div class="stat-card-sub">Range: $'+Math.round(p10).toLocaleString()+' (P10) to $'+Math.round(p90).toLocaleString()+' (P90) across 1,500 simulated paths</div>'
+      + '</div>'
+      + fanSvg
+      + '<div style="background:'+(hitProb>=50?'var(--line-dim)':'#FDECEC')+';border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
+        + '<div style="font-size:12px;font-weight:700;color:'+(hitProb>=50?'var(--line)':'var(--red)')+';margin-bottom:3px;">'+hitProb.toFixed(0)+'% of simulated paths reached your target</div>'
+        + '<div style="font-size:11.5px;color:var(--sub);line-height:1.5;">Target: $'+Math.round(targetCapital).toLocaleString()+' ('+targetPct+'%/yr annualized). This is a statistical model built on broad asset-class assumptions — not a replay of real historical trades.</div>'
+      + '</div>';
+
+    document.getElementById('backtest-continue-btn').disabled = false;
+  }, 50);
+}
+
+function buildFanChart(paths, initialCapital, targetCapital){
+  if(!paths || !paths.length) return '';
+  var maxLen = Math.max.apply(null, paths.map(function(p){return p.length;}));
+  var allVals = [].concat.apply([initialCapital, targetCapital], paths);
+  var maxV = Math.max.apply(null, allVals)*1.05;
+  var minV = Math.min(0, Math.min.apply(null, allVals));
+  var w=400, h=180, pad=6;
+  function xAt(i){ return pad + (i/(maxLen-1))*(w-2*pad); }
+  function yAt(v){ return h-pad - ((v-minV)/(maxV-minV))*(h-2*pad); }
+
+  var lines = paths.map(function(path){
+    var d = path.map(function(v,i){ return (i===0?'M':'L')+xAt(i).toFixed(1)+' '+yAt(v).toFixed(1); }).join(' ');
+    var endsAbove = path[path.length-1] >= targetCapital;
+    return '<path d="'+d+'" fill="none" stroke="'+(endsAbove?'#3B5BFF':'#C9C2AA')+'" stroke-width="1" opacity="0.35"/>';
+  }).join('');
+
+  var targetY = yAt(targetCapital);
+  var targetLine = '<line x1="'+pad+'" y1="'+targetY.toFixed(1)+'" x2="'+(w-pad)+'" y2="'+targetY.toFixed(1)+'" stroke="#C9A24B" stroke-width="1.5" stroke-dasharray="4 3"/>';
+
+  return '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:14px;margin-bottom:16px;">'
+    + '<div style="font-size:10.5px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Simulated Paths <span style="color:var(--alpha);font-weight:600;">┄ target</span></div>'
+    + '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:150px;">'+lines+targetLine+'</svg>'
+  + '</div>';
+}
+
+// ══════════════════════════════════════
+// STEP 5: CATALYST-AWARE AI PICKS
+// ══════════════════════════════════════
+var PICKS_LOADED = false;
+
+function renderPicksIntro(){
+  var mount = document.getElementById('picks-mount');
+  var t = TIERS.filter(function(x){return x.key===SELECTED_TIER;})[0];
+  mount.innerHTML =
+    '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:16px;margin-bottom:16px;">'
+    + '<div style="font-size:13px;color:var(--sub);line-height:1.55;margin-bottom:14px;">Finds real, current tickers matching your <b>'+t.name+'</b> tier and split — each with a specific, dated catalyst (earnings, macro event) rather than a generic pick.</div>'
+    + '<button class="btn btn-alpha" style="width:100%;" onclick="runFindPicks()">Find Picks</button>'
+    + '</div>'
+    + '<div id="picks-loading" style="display:none;text-align:center;padding:20px 0;color:var(--sub);font-size:13px;">Researching current catalysts — this can take up to a minute…</div>'
+    + '<div id="picks-error" style="display:none;color:var(--red);font-size:12.5px;padding:10px 0;"></div>'
+    + '<div id="picks-results"></div>';
+}
+
+function alphalineFhKey(){ return (localStorage.getItem('al_fh_key')||'').trim(); }
+function alphalineAiKey(){ return (localStorage.getItem('al_ai_key')||'').trim(); }
+
+function runFindPicks(){
+  var aiKey = alphalineAiKey();
+  if(!aiKey){ document.getElementById('picks-error').style.display='block'; document.getElementById('picks-error').textContent='Add your Anthropic API key in Settings first.'; return; }
+
+  var capital = parseFloat(document.getElementById('al-capital').value)||25000;
+  var t = TIERS.filter(function(x){return x.key===SELECTED_TIER;})[0];
+  var split = getCurrentSplit();
+  var duration = parseFloat(document.getElementById('al-duration').value)||2;
+  var targetPct = parseFloat(document.getElementById('al-target').value)||25;
+
+  document.getElementById('picks-loading').style.display='block';
+  document.getElementById('picks-error').style.display='none';
+  document.getElementById('picks-results').innerHTML='';
+
+  var prompt = 'Find 4 real, current tickers for a '+t.name.toLowerCase()+'-risk investment plan.\n\n'
+    + 'Capital: $'+capital.toLocaleString()+'. Split: '+Math.round(split.stock*100)+'% stocks, '+Math.round(split.etf*100)+'% ETFs, '+Math.round(split.option*100)+'% options. '
+    + 'Timeline: '+duration+' years, targeting '+targetPct+'%/yr annualized.\n\n'
+    + 'For EACH pick, use web search to confirm a real, dated, upcoming catalyst (earnings date, macro event, sector news) — not a generic thesis. Confirm the current price via search too. Use at most 6 searches total, grouped efficiently — do not search each fact separately.\n\n'
+    + 'Respond with ONLY valid JSON — your entire reply must be a single JSON object, starting with { and ending with }. No markdown fences, no commentary. Use exactly this schema:\n'
+    + '{"picks":[{"ticker":"XYZ","lane":"stock|etf|option","assumedPrice":123.45,"catalyst":"one sentence, dated and specific","rationale":"one sentence, honest about risk","allocationPct":15}]}\n'
+    + 'assumedPrice must be the exact current price you found via search, as a precise number, so it can be checked against a live quote. allocationPct is this pick\'s share of its lane\'s capital (stock/etf/option picks\' allocationPct values need not sum across lanes).';
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':aiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body: JSON.stringify({
+      model:'claude-sonnet-4-6',
+      max_tokens:3000,
+      messages:[{role:'user',content:prompt}],
+      tools:[{type:'web_search_20250305',name:'web_search'}]
+    })
+  }).then(function(r){ return r.json(); })
+    .then(function(data){
+      document.getElementById('picks-loading').style.display='none';
+      if(data.error) throw new Error(data.error.message);
+      var text='';
+      (data.content||[]).forEach(function(b){ if(b.type==='text') text+=b.text; });
+      var parsed = parsePicksJSON(text);
+      if(!parsed || !parsed.picks || !parsed.picks.length){
+        document.getElementById('picks-error').style.display='block';
+        document.getElementById('picks-error').textContent = text.trim() ? text.trim().slice(0,300) : 'Could not parse a response — try again.';
+        return;
+      }
+      PICKS_LOADED = true;
+      LAST_PICKS = parsed.picks;
+      renderPicks(parsed.picks);
+    })
+    .catch(function(e){
+      document.getElementById('picks-loading').style.display='none';
+      document.getElementById('picks-error').style.display='block';
+      document.getElementById('picks-error').textContent = 'Error: '+e.message;
+    });
+}
+
+function parsePicksJSON(text){
+  if(!text || !text.trim()) return null;
+  var cleaned = text.replace(/```json/gi,'').replace(/```/g,'').trim();
+  var start = cleaned.indexOf('{');
+  if(start===-1) return null;
+  var fromStart = cleaned.slice(start);
+  var match = fromStart.match(/\{[\s\S]*\}/);
+  if(match){
+    try{ return JSON.parse(match[0]); }catch(e1){
+      try{ return JSON.parse(match[0].replace(/,(\s*[\]}])/g,'$1')); }catch(e2){}
+    }
+  }
+  return null;
+}
+
+var LAST_PICKS = [];
+var LANE_META = {stock:{icon:'📈',color:'#3B5BFF'},etf:{icon:'📊',color:'#1A8754'},option:{icon:'🎯',color:'#C9A24B'}};
+
+function renderPicks(picks){
+  var mount = document.getElementById('picks-results');
+  mount.innerHTML = picks.map(function(p,i){
+    var lane = LANE_META[p.lane] || LANE_META.stock;
+    return '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:15px;margin-bottom:10px;">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+        + '<div style="font-family:var(--font-display);font-size:17px;font-weight:600;">'+lane.icon+' '+p.ticker+'</div>'
+        + '<div style="font-family:var(--font-mono);font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:'+lane.color+'18;color:'+lane.color+';text-transform:uppercase;">'+p.lane+'</div>'
+      + '</div>'
+      + '<div id="pick-price-'+i+'" style="margin-bottom:8px;"></div>'
+      + '<div style="font-size:12.5px;color:var(--ink);line-height:1.5;margin-bottom:6px;"><b>Catalyst:</b> '+(p.catalyst||'')+'</div>'
+      + '<div style="font-size:12.5px;color:var(--sub);line-height:1.5;">'+(p.rationale||'')+'</div>'
+    + '</div>';
+  }).join('');
+  verifyPickPrices(picks);
+}
+
+function verifyPickPrices(picks){
+  var fk = alphalineFhKey();
+  picks.forEach(function(p,i){
+    var mount = document.getElementById('pick-price-'+i);
+    if(!mount) return;
+    if(!fk){
+      mount.innerHTML = '<div style="font-size:11px;color:var(--muted);">Assumed price: $'+Number(p.assumedPrice).toFixed(2)+' (add a Finnhub key in Settings to verify live)</div>';
+      return;
+    }
+    fetch('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(p.ticker)+'&token='+fk)
+      .then(function(r){return r.json();})
+      .then(function(q){
+        if(!q || !q.c){ mount.innerHTML='<div style="font-size:11px;color:var(--muted);">No live quote found for '+p.ticker+'</div>'; return; }
+        var diff = ((q.c - p.assumedPrice)/p.assumedPrice)*100;
+        var stale = Math.abs(diff)>3;
+        mount.innerHTML = '<div style="font-size:11px;font-weight:700;color:'+(stale?'var(--red)':'var(--green)')+';">'
+          + (stale?'⚠️ Stale: assumed $':'✓ Verified: assumed $')+Number(p.assumedPrice).toFixed(2)+', live $'+Number(q.c).toFixed(2)+' ('+(diff>=0?'+':'')+diff.toFixed(1)+'%)</div>';
+      }).catch(function(){});
+  });
+}
+
+// ══════════════════════════════════════
+// STEP 6: SUMMARY
+// ══════════════════════════════════════
+function renderSummary(){
+  var capital = parseFloat(document.getElementById('al-capital').value)||25000;
+  var t = TIERS.filter(function(x){return x.key===SELECTED_TIER;})[0];
+  var split = getCurrentSplit();
+  var duration = parseFloat(document.getElementById('al-duration').value)||2;
+  var targetPct = parseFloat(document.getElementById('al-target').value)||25;
+  var targetCapital = capital*Math.pow(1+targetPct/100, duration);
+
+  var hitProb = null;
+  if(LAST_BACKTEST){
+    var finals = LAST_BACKTEST.finals;
+    hitProb = (finals.filter(function(f){return f>=targetCapital;}).length/finals.length*100);
+  }
+
+  var mount = document.getElementById('summary-mount');
+  var html = '<div class="stat-card">'
+    + '<div class="stat-card-lbl">'+t.name+' Plan · '+duration+'yr</div>'
+    + '<div class="stat-card-val mono">$'+Math.round(capital).toLocaleString()+' <span class="cents" style="font-size:16px;">→ $'+Math.round(targetCapital).toLocaleString()+'</span></div>'
+    + '<div class="stat-card-sub">'+targetPct+'%/yr target, '+SELECTED_FREQ.label.toLowerCase()+' rebalancing'+(hitProb!=null?' · backtest hit rate '+hitProb.toFixed(0)+'%':'')+'</div>'
+  + '</div>';
+
+  html += '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:16px;margin-bottom:14px;">'
+    + '<div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Split</div>'
+    + '<div class="split-bar" style="margin:0 0 10px;">'
+      + '<div style="width:'+(split.stock*100)+'%;background:#3B5BFF"></div>'
+      + '<div style="width:'+(split.etf*100)+'%;background:#1A8754"></div>'
+      + '<div style="width:'+(split.option*100)+'%;background:#C9A24B"></div>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;">'
+      + '<span>Stocks '+Math.round(split.stock*100)+'%</span><span>ETFs '+Math.round(split.etf*100)+'%</span><span>Options '+Math.round(split.option*100)+'%</span>'
+    + '</div>'
+  + '</div>';
+
+  if(LAST_PICKS && LAST_PICKS.length){
+    html += '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:16px;margin-bottom:14px;">'
+      + '<div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Picks</div>'
+      + LAST_PICKS.map(function(p){
+          var lane = LANE_META[p.lane]||LANE_META.stock;
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--mist);">'
+            + '<span style="font-weight:700;font-size:13px;">'+lane.icon+' '+p.ticker+'</span>'
+            + '<span style="font-family:var(--font-mono);font-size:11px;color:var(--sub);">$'+Number(p.assumedPrice).toFixed(2)+'</span>'
+          + '</div>';
+        }).join('')
+    + '</div>';
+  } else {
+    html += '<div style="font-size:12.5px;color:var(--muted);padding:10px 2px;">No picks generated yet — go back to Step 5 to find some.</div>';
+  }
+
+  mount.innerHTML = html;
+}
+
+// ══════════════════════════════════════
+// SETTINGS (API keys)
+// ══════════════════════════════════════
+function openAlSettings(){
+  document.getElementById('al-set-ai').value = alphalineAiKey();
+  document.getElementById('al-set-fh').value = alphalineFhKey();
+  document.getElementById('alSettingsOverlay').classList.add('open');
+}
+function closeAlSettings(){ document.getElementById('alSettingsOverlay').classList.remove('open'); }
+function saveAlSettings(){
+  var ai = document.getElementById('al-set-ai').value.trim();
+  var fh = document.getElementById('al-set-fh').value.trim();
+  if(ai) localStorage.setItem('al_ai_key', ai); else localStorage.removeItem('al_ai_key');
+  if(fh) localStorage.setItem('al_fh_key', fh); else localStorage.removeItem('al_fh_key');
+  closeAlSettings();
+}
+
+function saveAlPlan(){
+  var plan = {
+    capital: parseFloat(document.getElementById('al-capital').value)||25000,
+    tier: SELECTED_TIER,
+    split: getCurrentSplit(),
+    duration: parseFloat(document.getElementById('al-duration').value)||2,
+    targetPct: parseFloat(document.getElementById('al-target').value)||25,
+    freqKey: SELECTED_FREQ.key,
+    picks: LAST_PICKS,
+    savedAt: new Date().toISOString()
+  };
+  localStorage.setItem('alphaline_plan', JSON.stringify(plan));
+  var btn = document.getElementById('save-plan-btn');
+  var original = btn.textContent;
+  btn.textContent = '✓ Saved';
+  setTimeout(function(){ btn.textContent = original; }, 1800);
+}
+
+function loadAlPlan(){
+  var raw = localStorage.getItem('alphaline_plan');
+  if(!raw) return;
+  try{
+    var plan = JSON.parse(raw);
+    document.getElementById('al-capital').value = plan.capital;
+    document.getElementById('al-duration').value = plan.duration;
+    document.getElementById('al-target').value = plan.targetPct;
+    SELECTED_TIER = plan.tier || 'moderate';
+    document.getElementById('split-stock').value = Math.round((plan.split.stock||0.4)*100);
+    document.getElementById('split-etf').value = Math.round((plan.split.etf||0.4)*100);
+    document.getElementById('split-option').value = Math.round((plan.split.option||0.2)*100);
+    var freq = FREQ_OPTIONS.filter(function(f){return f.key===plan.freqKey;})[0];
+    if(freq){ SELECTED_FREQ = freq; document.getElementById('freq-label').textContent = freq.label+' ('+freq.periodsPerYear+')'; }
+    if(plan.picks && plan.picks.length){ LAST_PICKS = plan.picks; PICKS_LOADED = true; }
+  }catch(e){}
+}
+
+// Init
+loadAlPlan();
+renderTierCards();
+renderSplitBar();
+</script>
+
+</body>
+</html>
