@@ -40,7 +40,7 @@ input{font-family:inherit;}
 .app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:0 18px 40px;}
 
 /* ── SIGNATURE: ascending progress line ── */
-.sticky-header{position:sticky;top:0;background:var(--paper);z-index:20;padding-top:10px;}
+.sticky-header{position:sticky;top:0;background:var(--paper);z-index:20;padding:10px 0 14px;}
 .mkt-strip-hd{display:flex;align-items:center;justify-content:space-between;padding:0 1px 6px;}
 .mkt-updated{font-family:var(--font-mono);font-size:9.5px;color:var(--muted);font-weight:500;}
 .mkt-refresh-btn{display:flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:9.5px;font-weight:600;color:var(--sub);}
@@ -157,30 +157,30 @@ input{font-family:inherit;}
 <div class="app">
 
   <div class="sticky-header">
+    <!-- SIGNATURE ASCENDING PROGRESS LINE -->
+    <div class="rail">
+      <div class="rail-top">
+        <div class="rail-brand">
+          <svg class="rail-mark" viewBox="0 0 32 32" fill="none">
+            <rect x="0" y="0" width="32" height="32" rx="9" fill="#0A0E1A"/>
+            <path d="M7 23L13.5 15L18 19L26 7" stroke="#1E8A5C" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="26" cy="7" r="4" fill="#C13B31"/>
+          </svg>
+          <span class="rail-word">Alpha<em>Line</em></span>
+        </div>
+        <div style="display:flex;align-items:center;">
+          <span class="rail-step-lbl" id="rail-step-lbl">START</span>
+          <button id="tracked-badge" onclick="openTrackedSheet()" style="color:var(--sub);font-size:10.5px;font-weight:700;padding:5px 9px;background:var(--p1);border:1.5px solid var(--mist);border-radius:20px;margin-left:8px;">📋 Saved</button>
+          <button onclick="openAlSettings()" style="color:var(--muted);font-size:16px;padding:2px 4px;margin-left:6px;">⚙</button>
+        </div>
+      </div>
+    </div>
+
     <div class="mkt-strip-hd">
       <span class="mkt-updated" id="mkt-updated">—</span>
       <button class="mkt-refresh-btn" id="mkt-refresh-btn" onclick="mktRenderStrip()"><span id="mkt-refresh-icon">↻</span> Refresh</button>
     </div>
     <div class="mkt-strip" id="mkt-strip"></div>
-  </div>
-
-  <!-- SIGNATURE ASCENDING PROGRESS LINE -->
-  <div class="rail">
-    <div class="rail-top">
-      <div class="rail-brand">
-        <svg class="rail-mark" viewBox="0 0 32 32" fill="none">
-          <rect x="0" y="0" width="32" height="32" rx="9" fill="#0A0E1A"/>
-          <path d="M7 23L13.5 15L18 19L26 7" stroke="#1E8A5C" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="26" cy="7" r="4" fill="#C13B31"/>
-        </svg>
-        <span class="rail-word">Alpha<em>Line</em></span>
-      </div>
-      <div style="display:flex;align-items:center;">
-        <span class="rail-step-lbl" id="rail-step-lbl">START</span>
-        <button id="tracked-badge" onclick="openTrackedSheet()" style="color:var(--sub);font-size:10.5px;font-weight:700;padding:5px 9px;background:var(--p1);border:1.5px solid var(--mist);border-radius:20px;margin-left:8px;">📋 Saved</button>
-        <button onclick="openAlSettings()" style="color:var(--muted);font-size:16px;padding:2px 4px;margin-left:6px;">⚙</button>
-      </div>
-    </div>
   </div>
 
   <!-- SCENE 0: HERO -->
@@ -381,7 +381,9 @@ function goToStep(n){
   if(n===2) renderSplitBar();
   if(n===1) renderTierCards();
   if(n===4) runBacktestAndRender();
-  if(n===5 && !PICKS_LOADED) renderPicksIntro();
+  if(n===5){
+    if(LAST_PICKS && LAST_PICKS.length){ renderPicks(LAST_PICKS); } else { renderPicksIntro(); }
+  }
   if(n===6) renderSummary();
 }
 
@@ -683,7 +685,6 @@ function buildFanChart(paths, initialCapital, targetCapital, duration){
 // ══════════════════════════════════════
 // STEP 5: CATALYST-AWARE AI PICKS
 // ══════════════════════════════════════
-var PICKS_LOADED = false;
 
 function renderPicksIntro(){
   var mount = document.getElementById('picks-mount');
@@ -824,7 +825,6 @@ function runFindPicks(){
         document.getElementById('picks-error').textContent = text.trim() ? text.trim().slice(0,300) : 'Could not parse a response — try again.';
         return;
       }
-      PICKS_LOADED = true;
       LAST_PICKS = parsed.picks;
       renderPicks(parsed.picks);
     })
@@ -1270,7 +1270,7 @@ function loadAlPlan(){
     document.getElementById('split-option').value = Math.round((plan.split.option||0.2)*100);
     var freq = FREQ_OPTIONS.filter(function(f){return f.key===plan.freqKey;})[0];
     if(freq){ SELECTED_FREQ = freq; document.getElementById('freq-label').textContent = freq.label+' ('+freq.periodsPerYear+')'; }
-    if(plan.picks && plan.picks.length){ LAST_PICKS = plan.picks; PICKS_LOADED = true; }
+    if(plan.picks && plan.picks.length){ LAST_PICKS = plan.picks; }
   }catch(e){}
 }
 
