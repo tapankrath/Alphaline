@@ -170,7 +170,7 @@ input{font-family:inherit;}
         </div>
         <div style="display:flex;align-items:center;">
           <span class="rail-step-lbl" id="rail-step-lbl">START</span>
-          <button id="tracked-badge" onclick="openTrackedSheet()" style="color:var(--sub);font-size:10.5px;font-weight:700;padding:5px 9px;background:var(--p1);border:1.5px solid var(--mist);border-radius:20px;margin-left:8px;">📋 Saved</button>
+          <button id="tracked-badge" onclick="openTrackedSheet()" style="color:var(--sub);font-size:10.5px;font-weight:700;padding:5px 9px;background:var(--p1);border:1.5px solid var(--mist);border-radius:20px;margin-left:8px;">📊 My Trades</button>
           <button onclick="openAlSettings()" style="color:var(--muted);font-size:16px;padding:2px 4px;margin-left:6px;">⚙</button>
         </div>
       </div>
@@ -900,7 +900,7 @@ function updateTrackedBadge(){
   var btn = document.getElementById('tracked-badge');
   if(!btn) return;
   var n = loadTrackedPicks().length;
-  btn.textContent = '📋 Saved'+(n?' ('+n+')':'');
+  btn.textContent = '📊 My Trades'+(n?' ('+n+')':'');
 }
 
 function daysUntil(dateStr){
