@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="AlphaLine"/>
-<meta name="theme-color" content="#0B0F19"/>
+<meta name="theme-color" content="#0A0E1A"/>
 <meta name="description" content="AlphaLine — one guided plan from capital to a catalyst-aware, backtested strategy."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -17,11 +17,11 @@
 <title>AlphaLine</title>
 <style>
 :root{
-  --ink:#0B0F19; --paper:#F6F7FA; --p1:#ffffff;
-  --line:#3B5BFF; --line-dim:#E7EBFF;
-  --alpha:#C9A24B; --alpha-dim:#F5EEDD;
-  --mist:#E4E7EE; --sub:#5B6478; --muted:#9BA2B4;
-  --green:#1A8754; --red:#C4342F;
+  --ink:#0A0E1A; --paper:#F5F4EF; --p1:#ffffff;
+  --line:#2C3EA8; --line-dim:#E7E9F7;
+  --alpha:#B4823A; --alpha-dim:#F3E9D6;
+  --mist:#E4E1D8; --sub:#5B5F6E; --muted:#96938A;
+  --green:#1E8A5C; --red:#C13B31;
   --font-display:'Fraunces', Georgia, serif;
   --font-body:'IBM Plex Sans', -apple-system, sans-serif;
   --font-mono:'IBM Plex Mono', 'SF Mono', monospace;
@@ -43,9 +43,8 @@ input{font-family:inherit;}
 .rail{padding:16px 0 10px;position:sticky;top:0;background:var(--paper);z-index:20;}
 .rail-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
 .rail-brand{display:flex;align-items:center;gap:7px;}
-.rail-mark-badge{width:34px;height:34px;flex-shrink:0;background:linear-gradient(135deg,#141A2C,#0B0F19);border-radius:9px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(11,15,25,.35);}
-.rail-mark{width:19px;height:19px;}
-.rail-word{font-family:var(--font-display);font-size:20px;font-weight:700;letter-spacing:-.015em;}
+.rail-mark{width:36px;height:36px;flex-shrink:0;}
+.rail-word{font-family:var(--font-display);font-size:22px;font-weight:800;letter-spacing:-.02em;}
 .rail-word em{font-style:normal;color:var(--line);}
 .rail-step-lbl{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);font-weight:500;letter-spacing:.02em;}
 .rail-svg-wrap{width:100%;height:34px;}
@@ -65,8 +64,7 @@ input{font-family:inherit;}
 .scene-sub{font-size:13.5px;color:var(--sub);line-height:1.55;margin-bottom:22px;max-width:38ch;}
 
 /* ── HERO (scene 0) ── */
-.hero-mark-badge{width:76px;height:76px;background:linear-gradient(135deg,#141A2C,#0B0F19);border-radius:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 28px rgba(11,15,25,.32);margin-bottom:26px;}
-.hero-mark{width:42px;height:42px;}
+.hero-mark{width:104px;height:104px;margin-bottom:24px;}
 .hero-title{font-family:var(--font-display);font-size:40px;font-weight:600;letter-spacing:-.02em;line-height:1.05;margin-bottom:14px;}
 .hero-title em{font-style:normal;color:var(--line);}
 .hero-sub{font-size:15px;color:var(--sub);line-height:1.6;margin-bottom:8px;max-width:34ch;}
@@ -117,7 +115,7 @@ input{font-family:inherit;}
 .btn-primary{background:var(--ink);color:#fff;}
 .btn-primary:disabled{opacity:.35;pointer-events:none;}
 .btn-ghost{background:none;color:var(--sub);border:1.5px solid var(--mist);flex:0 0 auto;padding:15px 20px;}
-.btn-alpha{background:linear-gradient(135deg,var(--alpha),#B8923D);color:#fff;}
+.btn-alpha{background:linear-gradient(135deg,var(--alpha),#9C6F2E);color:#fff;}
 
 /* ── FREQUENCY SHEET ── */
 .sheet-overlay{display:none;position:fixed;inset:0;background:rgba(11,15,25,.5);z-index:100;align-items:flex-end;}
@@ -132,9 +130,7 @@ input{font-family:inherit;}
 .sheet-check{color:var(--line);font-size:17px;font-weight:700;}
 
 /* ── STAT CARD ── */
-.stat-card{background:linear-gradient(145deg,#141A2C,#0B0F19 65%);color:#fff;border-radius:16px;padding:22px 20px;margin-bottom:16px;position:relative;overflow:hidden;box-shadow:0 12px 28px rgba(11,15,25,.22);}
-.stat-card::before{content:'';position:absolute;top:-60%;right:-30%;width:220px;height:220px;background:radial-gradient(circle, rgba(59,91,255,.16), transparent 70%);pointer-events:none;}
-.stat-card>*{position:relative;z-index:1;}
+.stat-card{background:var(--ink);color:#fff;border-radius:16px;padding:20px;margin-bottom:16px;}
 .stat-card-lbl{font-family:var(--font-mono);font-size:10.5px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
 .stat-card-val{font-family:var(--font-display);font-size:34px;font-weight:600;letter-spacing:-.01em;}
 .stat-card-val .cents{font-size:19px;color:rgba(255,255,255,.5);}
@@ -149,12 +145,11 @@ input{font-family:inherit;}
   <div class="rail">
     <div class="rail-top">
       <div class="rail-brand">
-        <div class="rail-mark-badge">
-          <svg class="rail-mark" viewBox="0 0 24 24" fill="none">
-            <path d="M2 18L8 11L13 15L22 4" stroke="#7C93FF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="22" cy="4" r="3.4" fill="#C9A24B"/>
-          </svg>
-        </div>
+        <svg class="rail-mark" viewBox="0 0 32 32" fill="none">
+          <rect x="0" y="0" width="32" height="32" rx="9" fill="#0A0E1A"/>
+          <path d="M7 23L13.5 15L18 19L26 7" stroke="#5570FF" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="26" cy="7" r="4" fill="#D9A94E"/>
+        </svg>
         <span class="rail-word">Alpha<em>Line</em></span>
       </div>
       <div style="display:flex;align-items:center;">
@@ -172,12 +167,11 @@ input{font-family:inherit;}
 
   <!-- SCENE 0: HERO -->
   <section class="scene active" id="scene-0">
-    <div class="hero-mark-badge">
-      <svg class="hero-mark" viewBox="0 0 24 24" fill="none">
-        <path d="M2 18L8 11L13 15L22 4" stroke="#7C93FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="22" cy="4" r="3.2" fill="#C9A24B"/>
-      </svg>
-    </div>
+    <svg class="hero-mark" viewBox="0 0 32 32" fill="none">
+      <rect x="0" y="0" width="32" height="32" rx="9" fill="#0A0E1A"/>
+      <path d="M7 23L13.5 15L18 19L26 7" stroke="#5570FF" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="26" cy="7" r="4" fill="#D9A94E"/>
+    </svg>
     <h1 class="hero-title">One plan.<br/>Built in <em>order</em>.</h1>
     <p class="hero-sub">Capital, risk, split, timeline, a backtest, and real catalysts — one guided line from start to a plan you can act on.</p>
     <div class="hero-steps">
@@ -228,15 +222,15 @@ input{font-family:inherit;}
     <div class="split-bar" id="split-bar"></div>
 
     <div class="split-row">
-      <div class="split-hd"><span class="split-name"><span class="split-dot" style="background:#3B5BFF"></span>Stocks</span><span class="split-val mono" id="split-stock-val">40%</span></div>
+      <div class="split-hd"><span class="split-name"><span class="split-dot" style="background:#2C3EA8"></span>Stocks</span><span class="split-val mono" id="split-stock-val">40%</span></div>
       <input type="range" class="split-slider" id="split-stock" min="0" max="100" value="40" oninput="splitChanged('stock')"/>
     </div>
     <div class="split-row">
-      <div class="split-hd"><span class="split-name"><span class="split-dot" style="background:#1A8754"></span>ETFs</span><span class="split-val mono" id="split-etf-val">40%</span></div>
+      <div class="split-hd"><span class="split-name"><span class="split-dot" style="background:#1E8A5C"></span>ETFs</span><span class="split-val mono" id="split-etf-val">40%</span></div>
       <input type="range" class="split-slider" id="split-etf" min="0" max="100" value="40" oninput="splitChanged('etf')"/>
     </div>
     <div class="split-row">
-      <div class="split-hd"><span class="split-name"><span class="split-dot" style="background:#C9A24B"></span>Options</span><span class="split-val mono" id="split-option-val">20%</span></div>
+      <div class="split-hd"><span class="split-name"><span class="split-dot" style="background:#B4823A"></span>Options</span><span class="split-val mono" id="split-option-val">20%</span></div>
       <input type="range" class="split-slider" id="split-option" min="0" max="100" value="20" oninput="splitChanged('option')"/>
     </div>
 
@@ -384,15 +378,15 @@ function updateRail(n){
 // STEP 1: CAPITAL & RISK TIER
 // ══════════════════════════════════════
 var TIERS = [
-  {key:'conservative', name:'Conservative', badge:'LOWER SWING', color:'#1A8754', bg:'#EAF6EF',
+  {key:'conservative', name:'Conservative', badge:'LOWER SWING', color:'#1E8A5C', bg:'#E5F3EB',
    sub:'Capital preservation first. Mostly index exposure, options used sparingly for income.',
-   mix:{stock:20,etf:65,option:15}},
-  {key:'moderate', name:'Moderate', badge:'BALANCED', color:'#3B5BFF', bg:'#EEF1FF',
+   mix:{stock:20,etf:65,option:15}, stopPct:6},
+  {key:'moderate', name:'Moderate', badge:'BALANCED', color:'#2C3EA8', bg:'#E7E9F7',
    sub:'A working balance of growth and income across all three lanes.',
-   mix:{stock:40,etf:40,option:20}},
-  {key:'aggressive', name:'Aggressive', badge:'WIDER SWING', color:'#C9A24B', bg:'#FBF3E2',
+   mix:{stock:40,etf:40,option:20}, stopPct:10},
+  {key:'aggressive', name:'Aggressive', badge:'WIDER SWING', color:'#B4823A', bg:'#F3E9D6',
    sub:'Growth-first. Heavier options weighting for leverage — wider potential swings both ways.',
-   mix:{stock:35,etf:20,option:45}}
+   mix:{stock:35,etf:20,option:45}, stopPct:16}
 ];
 var SELECTED_TIER = 'moderate';
 
@@ -410,9 +404,9 @@ function renderTierCards(){
     '<div class="tier-hd"><span class="tier-name">'+t.name+'</span><span class="tier-badge" style="background:'+t.bg+';color:'+t.color+'">'+t.badge+'</span></div>'
     + '<div class="tier-sub">'+t.sub+'</div>'
     + '<div class="tier-mix">'
-      + '<div style="width:'+t.mix.stock+'%;background:#3B5BFF"></div>'
-      + '<div style="width:'+t.mix.etf+'%;background:#1A8754"></div>'
-      + '<div style="width:'+t.mix.option+'%;background:#C9A24B"></div>'
+      + '<div style="width:'+t.mix.stock+'%;background:#2C3EA8"></div>'
+      + '<div style="width:'+t.mix.etf+'%;background:#1E8A5C"></div>'
+      + '<div style="width:'+t.mix.option+'%;background:#B4823A"></div>'
     + '</div>'
     + '<div class="tier-mix-lbls"><span>Stocks '+t.mix.stock+'%</span><span>ETFs '+t.mix.etf+'%</span><span>Options '+t.mix.option+'%</span></div>';
 }
@@ -462,9 +456,9 @@ function renderSplitBar(){
   var etf = parseFloat(document.getElementById('split-etf').value)||0;
   var option = parseFloat(document.getElementById('split-option').value)||0;
   document.getElementById('split-bar').innerHTML =
-    '<div style="width:'+stock+'%;background:#3B5BFF"></div>'
-    +'<div style="width:'+etf+'%;background:#1A8754"></div>'
-    +'<div style="width:'+option+'%;background:#C9A24B"></div>';
+    '<div style="width:'+stock+'%;background:#2C3EA8"></div>'
+    +'<div style="width:'+etf+'%;background:#1E8A5C"></div>'
+    +'<div style="width:'+option+'%;background:#B4823A"></div>';
   document.getElementById('split-stock-val').textContent = stock+'%';
   document.getElementById('split-etf-val').textContent = etf+'%';
   document.getElementById('split-option-val').textContent = option+'%';
@@ -529,15 +523,10 @@ function randNorm(){
 
 function runBacktest(weights, periodsPerYear, totalPeriods, initialCapital, numPaths){
   var finals = [];
-  // Track EVERY path's value at EVERY period, so we can compute real
-  // percentile bands (P10/P50/P90) period-by-period for a proper fan chart
-  // — not just a sample of individual spaghetti lines.
-  var periodValues = []; // periodValues[t] = array of capital values across all paths at period t
-  for(var t=0; t<=totalPeriods; t++) periodValues.push([]);
-
+  var allPaths = []; // full set — used to compute per-period percentile bands
   for(var p=0; p<numPaths; p++){
     var capital = initialCapital;
-    periodValues[0].push(capital);
+    var path = [capital];
     for(var t=0; t<totalPeriods; t++){
       var marketZ = randNorm();
       var periodReturn = 0;
@@ -552,24 +541,32 @@ function runBacktest(weights, periodsPerYear, totalPeriods, initialCapital, numP
         periodReturn += w*(periodMean + periodVol*z);
       });
       capital = Math.max(0, capital*(1+periodReturn));
-      periodValues[t+1].push(capital);
+      path.push(capital);
     }
     finals.push(capital);
+    allPaths.push(path);
   }
   finals.sort(function(a,b){return a-b;});
+  return {finals:finals, samplePaths:allPaths};
+}
 
-  var bands = periodValues.map(function(vals){
-    vals.sort(function(a,b){return a-b;});
-    return {
+// Per-period percentile bands across every simulated path — this is what
+// the fan chart actually draws (a spaghetti of 1,500 raw lines reads as
+// noise; percentile bands read as a shape).
+function computeBands(paths){
+  var maxLen = Math.max.apply(null, paths.map(function(p){return p.length;}));
+  var bands = [];
+  for(var i=0; i<maxLen; i++){
+    var vals = paths.map(function(p){ return p[Math.min(i,p.length-1)]; }).sort(function(a,b){return a-b;});
+    bands.push({
       p10: percentile(vals,0.10),
       p25: percentile(vals,0.25),
       p50: percentile(vals,0.50),
       p75: percentile(vals,0.75),
       p90: percentile(vals,0.90)
-    };
-  });
-
-  return {finals:finals, bands:bands};
+    });
+  }
+  return bands;
 }
 
 function percentile(sorted, p){
@@ -599,7 +596,7 @@ function runBacktestAndRender(){
     var hitCount = finals.filter(function(f){return f>=targetCapital;}).length;
     var hitProb = (hitCount/finals.length*100);
 
-    var fanSvg = buildFanChart(result.bands, capital, targetCapital, duration);
+    var fanSvg = buildFanChart(result.samplePaths, capital, targetCapital, duration);
 
     mount.innerHTML =
       '<div class="stat-card">'
@@ -608,8 +605,8 @@ function runBacktestAndRender(){
       + '<div class="stat-card-sub">Range: $'+Math.round(p10).toLocaleString()+' (P10) to $'+Math.round(p90).toLocaleString()+' (P90) across 1,500 simulated paths</div>'
       + '</div>'
       + fanSvg
-      + '<div style="background:'+(hitProb>=50?'var(--line-dim)':'#FDECEC')+';border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
-        + '<div style="font-size:13px;font-weight:700;color:'+(hitProb>=50?'var(--line)':'var(--red)')+';margin-bottom:3px;">'+hitProb.toFixed(0)+'% of simulated paths reached your target</div>'
+      + '<div style="background:'+(hitProb>=50?'var(--line-dim)':'#F8E9E7')+';border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
+        + '<div style="font-size:12px;font-weight:700;color:'+(hitProb>=50?'var(--line)':'var(--red)')+';margin-bottom:3px;">'+hitProb.toFixed(0)+'% of simulated paths reached your target</div>'
         + '<div style="font-size:11.5px;color:var(--sub);line-height:1.5;">Target: $'+Math.round(targetCapital).toLocaleString()+' ('+targetPct+'%/yr annualized). This is a statistical model built on broad asset-class assumptions — not a replay of real historical trades.</div>'
       + '</div>';
 
@@ -617,82 +614,58 @@ function runBacktestAndRender(){
   }, 50);
 }
 
-function fmtCompact(n){
-  var sign = n<0?'-':'';
-  n = Math.abs(n);
-  if(n>=1000000) return sign+'$'+(n/1000000).toFixed(n>=10000000?0:1)+'M';
-  if(n>=1000) return sign+'$'+Math.round(n/1000)+'K';
-  return sign+'$'+Math.round(n);
-}
+function buildFanChart(paths, initialCapital, targetCapital, duration){
+  if(!paths || !paths.length) return '';
+  var bands = computeBands(paths);
+  var maxLen = bands.length;
 
-function buildFanChart(bands, initialCapital, targetCapital, duration){
-  if(!bands || !bands.length) return '';
-  var n = bands.length;
-  // Scale to the actual simulated range (P10-P90 across all periods), with
-  // headroom — NOT stretched to include a far-off target, which would
-  // squash the real distribution into an unreadable sliver.
-  var allP10 = bands.map(function(b){return b.p10;});
-  var allP90 = bands.map(function(b){return b.p90;});
-  var simMin = Math.min.apply(null, allP10.concat([initialCapital]));
-  var simMax = Math.max.apply(null, allP90.concat([initialCapital]));
-  var range = simMax-simMin || simMax || 1;
-  var targetInRange = targetCapital <= simMax + range*0.35;
-  var maxV = (targetInRange ? Math.max(simMax, targetCapital) : simMax) + range*0.12;
-  var minV = Math.max(0, simMin - range*0.08);
+  var allVals = [initialCapital, targetCapital];
+  bands.forEach(function(b){ allVals.push(b.p10, b.p90); });
+  var maxV = Math.max.apply(null, allVals)*1.06;
+  var minV = Math.max(0, Math.min.apply(null, allVals)*0.94);
 
-  var w=400, h=210, padL=44, padR=10, padT=14, padB=22;
-  function xAt(i){ return padL + (i/(n-1))*(w-padL-padR); }
-  function yAt(v){ return h-padB - ((v-minV)/(maxV-minV||1))*(h-padT-padB); }
+  var w=400, h=230, padT=10, padR=14, padB=26, padL=14;
+  function xAt(i){ return padL + (i/(maxLen-1))*(w-padL-padR); }
+  function yAt(v){ return h-padB - ((v-minV)/(maxV-minV))*(h-padT-padB); }
 
-  function bandPath(loKey,hiKey){
+  function bandArea(hiKey, loKey){
     var top = bands.map(function(b,i){ return (i===0?'M':'L')+xAt(i).toFixed(1)+' '+yAt(b[hiKey]).toFixed(1); }).join(' ');
-    var bottom = bands.slice().reverse().map(function(b,i){ var idx=n-1-i; return 'L'+xAt(idx).toFixed(1)+' '+yAt(b[loKey]).toFixed(1); }).join(' ');
-    return top+' '+bottom+' Z';
-  }
-  var band90 = '<path d="'+bandPath('p10','p90')+'" fill="#3B5BFF" opacity="0.10"/>';
-  var band50 = '<path d="'+bandPath('p25','p75')+'" fill="#3B5BFF" opacity="0.20"/>';
-  var medianLine = '<path d="'+bands.map(function(b,i){return (i===0?'M':'L')+xAt(i).toFixed(1)+' '+yAt(b.p50).toFixed(1);}).join(' ')+'" fill="none" stroke="#3B5BFF" stroke-width="2.2" stroke-linecap="round"/>';
-
-  // Y-axis gridlines + labels (3 rows: top/mid/bottom of visible scale)
-  var yTicks = [minV + (maxV-minV)*0.02, minV + (maxV-minV)*0.5, maxV*0.98];
-  var yAxis = yTicks.map(function(v){
-    var y = yAt(v);
-    return '<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(w-padR)+'" y2="'+y.toFixed(1)+'" stroke="#E4E7EE" stroke-width="1"/>'
-      + '<text x="2" y="'+(y+3).toFixed(1)+'" font-family="IBM Plex Mono" font-size="9" fill="#9BA2B4">'+fmtCompact(v)+'</text>';
-  }).join('');
-
-  // X-axis labels (Start, then evenly spaced year marks)
-  var xLabels = '<text x="'+padL+'" y="'+(h-6)+'" font-family="IBM Plex Mono" font-size="9" fill="#9BA2B4">Start</text>';
-  var yearMarks = Math.max(1, Math.round(duration));
-  for(var yr=1; yr<=yearMarks; yr++){
-    var frac = (yr/duration);
-    if(frac>1.02) break;
-    var xi = frac*(n-1);
-    var xp = xAt(xi);
-    xLabels += '<text x="'+xp.toFixed(1)+'" y="'+(h-6)+'" font-family="IBM Plex Mono" font-size="9" fill="#9BA2B4" text-anchor="middle">Yr '+yr+'</text>';
+    var bot = bands.slice().reverse().map(function(b,i){ var idx=maxLen-1-i; return 'L'+xAt(idx).toFixed(1)+' '+yAt(b[loKey]).toFixed(1); }).join(' ');
+    return top+' '+bot+' Z';
   }
 
-  var targetMarkup = '';
-  if(targetInRange){
-    var targetY = yAt(targetCapital);
-    targetMarkup = '<line x1="'+padL+'" y1="'+targetY.toFixed(1)+'" x2="'+(w-padR)+'" y2="'+targetY.toFixed(1)+'" stroke="#C9A24B" stroke-width="1.5" stroke-dasharray="4 3"/>'
-      + '<text x="'+(w-padR)+'" y="'+(targetY-4).toFixed(1)+'" font-family="IBM Plex Mono" font-size="9" fill="#B8923D" text-anchor="end" font-weight="700">Target '+fmtCompact(targetCapital)+'</text>';
-  }
+  var outerBand = '<path d="'+bandArea('p90','p10')+'" fill="#2C3EA8" opacity="0.10"/>';
+  var innerBand = '<path d="'+bandArea('p75','p25')+'" fill="#2C3EA8" opacity="0.20"/>';
+  var medianLine = '<path d="'+bands.map(function(b,i){ return (i===0?'M':'L')+xAt(i).toFixed(1)+' '+yAt(b.p50).toFixed(1); }).join(' ')+'" fill="none" stroke="#2C3EA8" stroke-width="2.5" stroke-linecap="round"/>';
 
-  var outOfRangeNote = targetInRange ? '' :
-    '<div style="display:flex;align-items:center;gap:6px;margin-top:8px;padding:7px 9px;background:var(--alpha-dim);border-radius:8px;">'
-    + '<span style="color:var(--alpha);font-weight:900;">▲</span>'
-    + '<span style="font-size:11px;color:#8A6D2F;font-weight:600;">Target of '+fmtCompact(targetCapital)+' is well above the simulated range — not shown to scale on this chart.</span>'
-    + '</div>';
+  var targetY = yAt(targetCapital);
+  var targetOnChart = targetCapital<=maxV;
+  var targetLine = targetOnChart ? '<line x1="'+padL+'" y1="'+targetY.toFixed(1)+'" x2="'+(w-padR)+'" y2="'+targetY.toFixed(1)+'" stroke="#B4823A" stroke-width="1.5" stroke-dasharray="5 4"/>' : '';
+  var targetLbl = targetOnChart ? '<text x="'+(w-padR)+'" y="'+(targetY-5).toFixed(1)+'" text-anchor="end" font-family="IBM Plex Mono" font-size="10" font-weight="700" fill="#9C6F2E">Target $'+Math.round(targetCapital).toLocaleString()+'</text>' : '';
+
+  var startY = yAt(initialCapital);
+  var gridStart = '<line x1="'+padL+'" y1="'+startY.toFixed(1)+'" x2="'+(w-padR)+'" y2="'+startY.toFixed(1)+'" stroke="#E4E1D8" stroke-width="1"/>';
+
+  var medianEndY = yAt(bands[maxLen-1].p50);
+  var medianDot = '<circle cx="'+(w-padR).toFixed(1)+'" cy="'+medianEndY.toFixed(1)+'" r="3" fill="#2C3EA8"/>';
+
+  var xNow = '<text x="'+padL+'" y="'+(h-8)+'" font-family="IBM Plex Mono" font-size="10" fill="#96938A">Now</text>';
+  var xEnd = '<text x="'+(w-padR)+'" y="'+(h-8)+'" text-anchor="end" font-family="IBM Plex Mono" font-size="10" fill="#96938A">'+duration+'yr</text>';
+
+  var svg = '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:190px;overflow:visible;">'
+    + outerBand + innerBand + gridStart + targetLine + medianLine + medianDot + targetLbl + xNow + xEnd
+  + '</svg>';
 
   return '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:14px;margin-bottom:16px;">'
-    + '<div style="display:flex;align-items:center;gap:12px;font-size:10.5px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">'
-      + '<span>Simulated Range</span>'
-      + '<span style="display:flex;align-items:center;gap:4px;font-weight600;text-transform:none;letter-spacing:0;"><span style="width:10px;height:10px;border-radius:2px;background:#3B5BFF;display:inline-block;opacity:.6;"></span>P10–P90</span>'
-      + '<span style="display:flex;align-items:center;gap:4px;font-weight:600;text-transform:none;letter-spacing:0;"><span style="width:14px;height:2px;background:#3B5BFF;display:inline-block;"></span>Median</span>'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
+      + '<div style="font-size:10.5px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;">Simulated Paths</div>'
+      + '<div style="font-family:var(--font-mono);font-size:10px;color:var(--sub);display:flex;gap:10px;align-items:center;">'
+        + '<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#2C3EA8;margin-right:4px;"></span>Median</span>'
+        + '<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#B4823A;margin-right:4px;"></span>Target</span>'
+      + '</div>'
     + '</div>'
-    + '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:175px;">'+yAxis+band90+band50+medianLine+targetMarkup+xLabels+'</svg>'
-    + outOfRangeNote
+    + svg
+    + '<div style="font-size:10.5px;color:var(--muted);margin-top:6px;">Shaded bands show the middle 50% (dark) and middle 80% (light) of all 1,500 simulated outcomes at each point in time.</div>'
   + '</div>';
 }
 
@@ -787,47 +760,60 @@ function parsePicksJSON(text){
 }
 
 var LAST_PICKS = [];
-var LANE_META = {stock:{icon:'📈',color:'#3B5BFF'},etf:{icon:'📊',color:'#1A8754'},option:{icon:'🎯',color:'#C9A24B'}};
+var LANE_META = {stock:{icon:'📈',color:'#2C3EA8'},etf:{icon:'📊',color:'#1E8A5C'},option:{icon:'🎯',color:'#B4823A'}};
 
-function computePickSizing(p){
-  var capital = parseFloat(document.getElementById('al-capital').value)||25000;
-  var split = getCurrentSplit();
-  var laneCapital = capital * (split[p.lane]||0);
-  var pickDollars = laneCapital * ((p.allocationPct||0)/100);
-  var sizing = { laneCapital:laneCapital, dollars:pickDollars };
-  if(p.lane==='stock' || p.lane==='etf'){
-    sizing.shares = p.assumedPrice>0 ? Math.floor(pickDollars/p.assumedPrice) : 0;
-  }
-  return sizing;
+// Turns a raw AI pick + the plan's capital/split/tier into an actual
+// position: dollars allocated, share/contract count, and a simple
+// entry/stop/target trade plan sized off the tier's risk band.
+function pickPositionInfo(p, capital, split, tier){
+  var laneWeight = split[p.lane] || 0;
+  var laneCapital = capital * laneWeight;
+  var allocPct = (typeof p.allocationPct==='number' ? p.allocationPct : 0)/100;
+  var dollars = laneCapital * allocPct;
+  var price = Number(p.assumedPrice)||0;
+  var isOption = p.lane==='option';
+  var unitCost = isOption ? price*100 : price;
+  var units = unitCost>0 ? Math.floor(dollars/unitCost) : 0;
+  var actualDollars = units*unitCost;
+
+  var stopPct = (tier && tier.stopPct ? tier.stopPct : 10)/100;
+  var entry = price;
+  var stop = isOption ? entry : entry*(1-stopPct);
+  var target = entry*(1+stopPct*2); // simple 2:1 reward:risk framing
+
+  return {
+    dollars: dollars, actualDollars: actualDollars, units: units, isOption: isOption,
+    entry: entry, stop: stop, target: target, stopPct: stopPct*100
+  };
 }
 
 function renderPicks(picks){
   var mount = document.getElementById('picks-results');
+  var capital = parseFloat(document.getElementById('al-capital').value)||25000;
+  var split = getCurrentSplit();
+  var tier = TIERS.filter(function(x){return x.key===SELECTED_TIER;})[0];
+
   mount.innerHTML = picks.map(function(p,i){
     var lane = LANE_META[p.lane] || LANE_META.stock;
-    var sz = computePickSizing(p);
-    var sizingHtml;
-    if(p.lane==='option'){
-      sizingHtml = '<div style="display:flex;justify-content:space-between;align-items:center;background:var(--paper);border-radius:8px;padding:8px 10px;margin-bottom:8px;">'
-        + '<span style="font-size:10.5px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.03em;">Capital Earmarked</span>'
-        + '<span class="mono" style="font-size:13px;font-weight:700;color:var(--ink);">$'+Math.round(sz.dollars).toLocaleString()+'</span>'
-      + '</div>'
-      + '<div style="font-size:10px;color:var(--muted);margin-bottom:8px;">Size the actual contract with FairValue or your broker\'s chain — this is capital reserved, not a contract count.</div>';
-    } else {
-      sizingHtml = '<div style="display:flex;justify-content:space-between;align-items:center;background:var(--paper);border-radius:8px;padding:8px 10px;margin-bottom:8px;">'
-        + '<span style="font-size:10.5px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.03em;">Position Size</span>'
-        + '<span class="mono" style="font-size:13px;font-weight:700;color:var(--ink);">$'+Math.round(sz.dollars).toLocaleString()+' <span style="color:var(--muted);font-weight:500;">(~'+sz.shares+' sh)</span></span>'
-      + '</div>';
-    }
+    var pos = pickPositionInfo(p, capital, split, tier);
+    var unitLbl = pos.isOption ? ' contract'+(pos.units===1?'':'s') : ' share'+(pos.units===1?'':'s');
     return '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:15px;margin-bottom:10px;">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
         + '<div style="font-family:var(--font-display);font-size:17px;font-weight:600;">'+lane.icon+' '+p.ticker+'</div>'
         + '<div style="font-family:var(--font-mono);font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:'+lane.color+'18;color:'+lane.color+';text-transform:uppercase;">'+p.lane+'</div>'
       + '</div>'
       + '<div id="pick-price-'+i+'" style="margin-bottom:8px;"></div>'
-      + sizingHtml
       + '<div style="font-size:12.5px;color:var(--ink);line-height:1.5;margin-bottom:6px;"><b>Catalyst:</b> '+(p.catalyst||'')+'</div>'
-      + '<div style="font-size:12.5px;color:var(--sub);line-height:1.5;">'+(p.rationale||'')+'</div>'
+      + '<div style="font-size:12.5px;color:var(--sub);line-height:1.5;margin-bottom:10px;">'+(p.rationale||'')+'</div>'
+      + '<div style="background:var(--paper);border-radius:10px;padding:10px 12px;">'
+        + '<div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;">Position &amp; trade plan</div>'
+        + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Size</span><span style="font-weight:700;">'+pos.units.toLocaleString()+unitLbl+' · $'+Math.round(pos.actualDollars).toLocaleString()+'</span></div>'
+        + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Entry</span><span style="font-weight:700;">$'+pos.entry.toFixed(2)+'</span></div>'
+        + (pos.isOption
+            ? '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;"><span style="color:var(--sub);">Max risk</span><span style="font-weight:700;color:var(--red);">Premium paid ($'+Math.round(pos.actualDollars).toLocaleString()+')</span></div>'
+            : '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Stop ('+pos.stopPct.toFixed(0)+'%)</span><span style="font-weight:700;color:var(--red);">$'+pos.stop.toFixed(2)+'</span></div>'
+              + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;"><span style="color:var(--sub);">Target</span><span style="font-weight:700;color:var(--green);">$'+pos.target.toFixed(2)+'</span></div>')
+      + '</div>'
     + '</div>';
   }).join('');
   verifyPickPrices(picks);
@@ -881,9 +867,9 @@ function renderSummary(){
   html += '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:16px;margin-bottom:14px;">'
     + '<div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Split</div>'
     + '<div class="split-bar" style="margin:0 0 10px;">'
-      + '<div style="width:'+(split.stock*100)+'%;background:#3B5BFF"></div>'
-      + '<div style="width:'+(split.etf*100)+'%;background:#1A8754"></div>'
-      + '<div style="width:'+(split.option*100)+'%;background:#C9A24B"></div>'
+      + '<div style="width:'+(split.stock*100)+'%;background:#2C3EA8"></div>'
+      + '<div style="width:'+(split.etf*100)+'%;background:#1E8A5C"></div>'
+      + '<div style="width:'+(split.option*100)+'%;background:#B4823A"></div>'
     + '</div>'
     + '<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;">'
       + '<span>Stocks '+Math.round(split.stock*100)+'%</span><span>ETFs '+Math.round(split.etf*100)+'%</span><span>Options '+Math.round(split.option*100)+'%</span>'
@@ -891,22 +877,30 @@ function renderSummary(){
   + '</div>';
 
   if(LAST_PICKS && LAST_PICKS.length){
+    var totalDeployed = 0;
+    var rows = LAST_PICKS.map(function(p){
+      var lane = LANE_META[p.lane]||LANE_META.stock;
+      var pos = pickPositionInfo(p, capital, split, t);
+      totalDeployed += pos.actualDollars;
+      var unitLbl = pos.isOption ? 'ct' : 'sh';
+      var riskCell = pos.isOption
+        ? ('<span style="color:var(--red);">risk $'+Math.round(pos.actualDollars).toLocaleString()+'</span>')
+        : ('<span style="color:var(--red);">stop $'+pos.stop.toFixed(2)+'</span> · <span style="color:var(--green);">tgt $'+pos.target.toFixed(2)+'</span>');
+      return '<div style="padding:9px 0;border-bottom:1px solid var(--mist);">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">'
+          + '<span style="font-weight:700;font-size:13px;">'+lane.icon+' '+p.ticker+'</span>'
+          + '<span style="font-family:var(--font-mono);font-size:12px;font-weight:700;">'+pos.units.toLocaleString()+unitLbl+' · $'+Math.round(pos.actualDollars).toLocaleString()+'</span>'
+        + '</div>'
+        + '<div style="font-family:var(--font-mono);font-size:10.5px;color:var(--sub);">entry $'+pos.entry.toFixed(2)+' · '+riskCell+'</div>'
+      + '</div>';
+    }).join('');
+
     html += '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:16px;margin-bottom:14px;">'
-      + '<div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Picks &amp; Trade Plan</div>'
-      + LAST_PICKS.map(function(p){
-          var lane = LANE_META[p.lane]||LANE_META.stock;
-          var sz = computePickSizing(p);
-          var sizeLabel = p.lane==='option'
-            ? '$'+Math.round(sz.dollars).toLocaleString()+' earmarked'
-            : '$'+Math.round(sz.dollars).toLocaleString()+' · ~'+sz.shares+' sh';
-          return '<div style="padding:9px 0;border-bottom:1px solid var(--mist);">'
-            + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">'
-              + '<span style="font-weight:700;font-size:13.5px;">'+lane.icon+' '+p.ticker+'</span>'
-              + '<span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--line);">'+sizeLabel+'</span>'
-            + '</div>'
-            + '<div style="font-size:10.5px;color:var(--muted);">@ $'+Number(p.assumedPrice).toFixed(2)+' assumed · '+(p.catalyst||'').slice(0,60)+(((p.catalyst||'').length>60)?'…':'')+'</div>'
-          + '</div>';
-        }).join('')
+      + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;">Picks &amp; trade plan</div>'
+        + '<div style="font-family:var(--font-mono);font-size:11px;color:var(--sub);">$'+Math.round(totalDeployed).toLocaleString()+' deployed</div>'
+      + '</div>'
+      + rows
     + '</div>';
   } else {
     html += '<div style="font-size:12.5px;color:var(--muted);padding:10px 2px;">No picks generated yet — go back to Step 5 to find some.</div>';
