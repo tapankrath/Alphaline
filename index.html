@@ -704,13 +704,18 @@ function runFindPicks(){
   document.getElementById('picks-error').style.display='none';
   document.getElementById('picks-results').innerHTML='';
 
-  var prompt = 'Find 4 real, current tickers for a '+t.name.toLowerCase()+'-risk investment plan.\n\n'
+  var prompt = 'Find 4 real, current tickers for a '+t.name.toLowerCase()+'-risk investment plan: pick names that fit the split below (e.g. if options are 0% skip options, if only 1 stock is wanted pick 1, etc — 4 total across the lanes that have capital).\n\n'
     + 'Capital: $'+capital.toLocaleString()+'. Split: '+Math.round(split.stock*100)+'% stocks, '+Math.round(split.etf*100)+'% ETFs, '+Math.round(split.option*100)+'% options. '
     + 'Timeline: '+duration+' years, targeting '+targetPct+'%/yr annualized.\n\n'
     + 'For EACH pick, use web search to confirm a real, dated, upcoming catalyst (earnings date, macro event, sector news) — not a generic thesis. Confirm the current price via search too. Use at most 6 searches total, grouped efficiently — do not search each fact separately.\n\n'
+    + 'For stock and ETF picks, respond with:\n'
+    + '{"ticker":"XYZ","lane":"stock","assumedPrice":123.45,"catalyst":"one sentence, dated and specific","rationale":"one sentence, honest about risk","allocationPct":15}\n\n'
+    + 'For option picks, choose one real, liquid, currently-listed contract (a specific strike and expiration you found or can reasonably infer from a real options chain — do not invent expirations that don\'t exist, listed expirations are almost always weekly or monthly and land on a Friday) and respond with:\n'
+    + '{"ticker":"XYZ","lane":"option","optionType":"call|put","strategy":"Long Call|Long Put","strike":150,"expiration":"YYYY-MM-DD","assumedPrice":4.20,"catalyst":"...","rationale":"...","allocationPct":15}\n'
+    + 'For options: assumedPrice is the per-share premium (the contract itself costs 100x this). Pick an expiration that lands at least 1-2 weeks AFTER the catalyst date, so the thesis has room to play out without being crushed by imminent theta/IV-crush into the print itself. Strike selection should match the risk tier: '+t.name.toLowerCase()+' tier → '+(t.key==='conservative'?'near-the-money or slightly in-the-money, favoring a higher-delta/lower-leverage contract':t.key==='aggressive'?'slightly out-of-the-money for more leverage, accepting a lower delta':'near-the-money, a balanced delta')+'.\n\n'
     + 'Respond with ONLY valid JSON — your entire reply must be a single JSON object, starting with { and ending with }. No markdown fences, no commentary. Use exactly this schema:\n'
-    + '{"picks":[{"ticker":"XYZ","lane":"stock|etf|option","assumedPrice":123.45,"catalyst":"one sentence, dated and specific","rationale":"one sentence, honest about risk","allocationPct":15}]}\n'
-    + 'assumedPrice must be the exact current price you found via search, as a precise number, so it can be checked against a live quote. allocationPct is this pick\'s share of its lane\'s capital (stock/etf/option picks\' allocationPct values need not sum across lanes).';
+    + '{"picks":[ ...pick objects as described above... ]}\n'
+    + 'allocationPct is this pick\'s share of its lane\'s capital (stock/etf/option picks\' allocationPct values need not sum across lanes).';
 
   fetch('https://api.anthropic.com/v1/messages', {
     method:'POST',
@@ -760,11 +765,24 @@ function parsePicksJSON(text){
 }
 
 var LAST_PICKS = [];
-var LANE_META = {stock:{icon:'📈',color:'#2C3EA8'},etf:{icon:'📊',color:'#1E8A5C'},option:{icon:'🎯',color:'#B4823A'}};
+var LANE_META = {
+  stock:{icon:'📈',color:'#2C3EA8',label:'Stocks'},
+  etf:{icon:'📊',color:'#1E8A5C',label:'ETFs'},
+  option:{icon:'🎯',color:'#B4823A',label:'Options'}
+};
+
+function daysUntil(dateStr){
+  if(!dateStr) return null;
+  var d = new Date(dateStr+'T00:00:00');
+  if(isNaN(d.getTime())) return null;
+  var ms = d.getTime() - new Date().setHours(0,0,0,0);
+  return Math.round(ms/86400000);
+}
 
 // Turns a raw AI pick + the plan's capital/split/tier into an actual
-// position: dollars allocated, share/contract count, and a simple
-// entry/stop/target trade plan sized off the tier's risk band.
+// position: dollars allocated, share/contract count, and a concrete
+// entry/exit trade plan. Stocks/ETFs get a price-based stop & target;
+// options get a strike/expiration/DTE-aware plan sized off premium.
 function pickPositionInfo(p, capital, split, tier){
   var laneWeight = split[p.lane] || 0;
   var laneCapital = capital * laneWeight;
@@ -775,16 +793,24 @@ function pickPositionInfo(p, capital, split, tier){
   var unitCost = isOption ? price*100 : price;
   var units = unitCost>0 ? Math.floor(dollars/unitCost) : 0;
   var actualDollars = units*unitCost;
+  var tooSmall = isOption && units===0 && dollars>0;
 
   var stopPct = (tier && tier.stopPct ? tier.stopPct : 10)/100;
   var entry = price;
-  var stop = isOption ? entry : entry*(1-stopPct);
-  var target = entry*(1+stopPct*2); // simple 2:1 reward:risk framing
+  var stop = isOption ? entry*0.5 : entry*(1-stopPct);          // options: cut at ~50% premium loss
+  var target = isOption ? entry*1.75 : entry*(1+stopPct*2);      // options: take profit at ~75% premium gain
+  var dte = isOption ? daysUntil(p.expiration) : null;
 
   return {
-    dollars: dollars, actualDollars: actualDollars, units: units, isOption: isOption,
-    entry: entry, stop: stop, target: target, stopPct: stopPct*100
+    dollars: dollars, actualDollars: actualDollars, units: units, isOption: isOption, tooSmall: tooSmall,
+    entry: entry, stop: stop, target: target, stopPct: stopPct*100, dte: dte
   };
+}
+
+function groupPicksByLane(picks){
+  var groups = {stock:[], etf:[], option:[]};
+  picks.forEach(function(p){ (groups[p.lane]||groups.stock).push(p); });
+  return groups;
 }
 
 function renderPicks(picks){
@@ -792,36 +818,77 @@ function renderPicks(picks){
   var capital = parseFloat(document.getElementById('al-capital').value)||25000;
   var split = getCurrentSplit();
   var tier = TIERS.filter(function(x){return x.key===SELECTED_TIER;})[0];
+  var groups = groupPicksByLane(picks);
+  var globalIdx = 0;
 
-  mount.innerHTML = picks.map(function(p,i){
-    var lane = LANE_META[p.lane] || LANE_META.stock;
-    var pos = pickPositionInfo(p, capital, split, tier);
-    var unitLbl = pos.isOption ? ' contract'+(pos.units===1?'':'s') : ' share'+(pos.units===1?'':'s');
-    return '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:15px;margin-bottom:10px;">'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
-        + '<div style="font-family:var(--font-display);font-size:17px;font-weight:600;">'+lane.icon+' '+p.ticker+'</div>'
-        + '<div style="font-family:var(--font-mono);font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:'+lane.color+'18;color:'+lane.color+';text-transform:uppercase;">'+p.lane+'</div>'
+  var html = ['stock','etf','option'].map(function(laneKey){
+    var laneItems = groups[laneKey];
+    if(!laneItems.length) return '';
+    var lane = LANE_META[laneKey];
+
+    var cards = laneItems.map(function(p){
+      var i = globalIdx++;
+      var pos = pickPositionInfo(p, capital, split, tier);
+
+      var body;
+      if(pos.isOption){
+        var strategyLbl = p.strategy || (p.optionType==='put'?'Long Put':'Long Call');
+        var dteLbl = pos.dte!=null ? (pos.dte+'d') : '—';
+        body = '<div style="background:var(--paper);border-radius:10px;padding:10px 12px;">'
+          + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;">'
+            + '<span style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;">Trade plan</span>'
+            + '<span style="font-family:var(--font-mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+lane.color+'18;color:'+lane.color+';">'+strategyLbl.toUpperCase()+'</span>'
+          + '</div>'
+          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Strike / Exp</span><span style="font-weight:700;">$'+(p.strike!=null?Number(p.strike).toFixed(2):'—')+' · '+(p.expiration||'—')+' ('+dteLbl+')</span></div>'
+          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Size</span><span style="font-weight:700;">'+pos.units.toLocaleString()+' contract'+(pos.units===1?'':'s')+' · $'+Math.round(pos.actualDollars).toLocaleString()+'</span></div>'
+          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Entry (premium)</span><span style="font-weight:700;">$'+pos.entry.toFixed(2)+'/sh</span></div>'
+          + (pos.tooSmall
+              ? '<div style="font-size:11px;color:var(--red);font-weight:600;margin-top:4px;">⚠️ Allocation ($'+Math.round(pos.dollars).toLocaleString()+') is smaller than 1 contract ($'+Math.round(pos.entry*100).toLocaleString()+') at this premium — raise this pick\'s allocation or pick a cheaper strike.</div>'
+              : '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;"><span style="color:var(--sub);">Take profit / Cut loss</span><span><span style="font-weight:700;color:var(--green);">+75% ($'+pos.target.toFixed(2)+')</span> <span style="color:var(--muted);">/</span> <span style="font-weight:700;color:var(--red);">-50% ($'+pos.stop.toFixed(2)+')</span></span></div>')
+          + '<div style="font-size:11px;color:var(--sub);line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid var(--mist);">Enter on or just before the catalyst. Close by expiration regardless of outcome — don\'t hold into the last few days of theta decay.</div>'
+        + '</div>';
+      } else {
+        var unitLbl = ' share'+(pos.units===1?'':'s');
+        body = '<div style="background:var(--paper);border-radius:10px;padding:10px 12px;">'
+          + '<div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;">Position &amp; trade plan</div>'
+          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Size</span><span style="font-weight:700;">'+pos.units.toLocaleString()+unitLbl+' · $'+Math.round(pos.actualDollars).toLocaleString()+'</span></div>'
+          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Entry</span><span style="font-weight:700;">$'+pos.entry.toFixed(2)+'</span></div>'
+          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Stop ('+pos.stopPct.toFixed(0)+'%)</span><span style="font-weight:700;color:var(--red);">$'+pos.stop.toFixed(2)+'</span></div>'
+          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;"><span style="color:var(--sub);">Target</span><span style="font-weight:700;color:var(--green);">$'+pos.target.toFixed(2)+'</span></div>'
+        + '</div>';
+      }
+
+      return '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:15px;margin-bottom:10px;">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+          + '<div style="font-family:var(--font-display);font-size:17px;font-weight:600;">'+lane.icon+' '+p.ticker+'</div>'
+          + '<div style="font-family:var(--font-mono);font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:'+lane.color+'18;color:'+lane.color+';text-transform:uppercase;">'+p.lane+'</div>'
+        + '</div>'
+        + '<div id="pick-price-'+i+'" style="margin-bottom:8px;"></div>'
+        + '<div style="font-size:12.5px;color:var(--ink);line-height:1.5;margin-bottom:6px;"><b>Catalyst:</b> '+(p.catalyst||'')+'</div>'
+        + '<div style="font-size:12.5px;color:var(--sub);line-height:1.5;margin-bottom:10px;">'+(p.rationale||'')+'</div>'
+        + body
+      + '</div>';
+    }).join('');
+
+    return '<div style="margin-bottom:6px;">'
+      + '<div style="display:flex;align-items:center;gap:7px;margin:18px 0 10px;">'
+        + '<span style="width:8px;height:8px;border-radius:2px;background:'+lane.color+';flex-shrink:0;"></span>'
+        + '<span style="font-size:12px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.05em;">'+lane.label+'</span>'
+        + '<span style="font-size:11px;color:var(--muted);">('+laneItems.length+')</span>'
       + '</div>'
-      + '<div id="pick-price-'+i+'" style="margin-bottom:8px;"></div>'
-      + '<div style="font-size:12.5px;color:var(--ink);line-height:1.5;margin-bottom:6px;"><b>Catalyst:</b> '+(p.catalyst||'')+'</div>'
-      + '<div style="font-size:12.5px;color:var(--sub);line-height:1.5;margin-bottom:10px;">'+(p.rationale||'')+'</div>'
-      + '<div style="background:var(--paper);border-radius:10px;padding:10px 12px;">'
-        + '<div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;">Position &amp; trade plan</div>'
-        + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Size</span><span style="font-weight:700;">'+pos.units.toLocaleString()+unitLbl+' · $'+Math.round(pos.actualDollars).toLocaleString()+'</span></div>'
-        + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Entry</span><span style="font-weight:700;">$'+pos.entry.toFixed(2)+'</span></div>'
-        + (pos.isOption
-            ? '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;"><span style="color:var(--sub);">Max risk</span><span style="font-weight:700;color:var(--red);">Premium paid ($'+Math.round(pos.actualDollars).toLocaleString()+')</span></div>'
-            : '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Stop ('+pos.stopPct.toFixed(0)+'%)</span><span style="font-weight:700;color:var(--red);">$'+pos.stop.toFixed(2)+'</span></div>'
-              + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;"><span style="color:var(--sub);">Target</span><span style="font-weight:700;color:var(--green);">$'+pos.target.toFixed(2)+'</span></div>')
-      + '</div>'
+      + cards
     + '</div>';
   }).join('');
+
+  mount.innerHTML = html;
   verifyPickPrices(picks);
 }
 
 function verifyPickPrices(picks){
   var fk = alphalineFhKey();
-  picks.forEach(function(p,i){
+  var groups = groupPicksByLane(picks);
+  var flatOrdered = groups.stock.concat(groups.etf, groups.option);
+  flatOrdered.forEach(function(p,i){
     var mount = document.getElementById('pick-price-'+i);
     if(!mount) return;
     if(!fk){
@@ -877,30 +944,52 @@ function renderSummary(){
   + '</div>';
 
   if(LAST_PICKS && LAST_PICKS.length){
-    var totalDeployed = 0;
-    var rows = LAST_PICKS.map(function(p){
-      var lane = LANE_META[p.lane]||LANE_META.stock;
-      var pos = pickPositionInfo(p, capital, split, t);
-      totalDeployed += pos.actualDollars;
-      var unitLbl = pos.isOption ? 'ct' : 'sh';
-      var riskCell = pos.isOption
-        ? ('<span style="color:var(--red);">risk $'+Math.round(pos.actualDollars).toLocaleString()+'</span>')
-        : ('<span style="color:var(--red);">stop $'+pos.stop.toFixed(2)+'</span> · <span style="color:var(--green);">tgt $'+pos.target.toFixed(2)+'</span>');
-      return '<div style="padding:9px 0;border-bottom:1px solid var(--mist);">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">'
-          + '<span style="font-weight:700;font-size:13px;">'+lane.icon+' '+p.ticker+'</span>'
-          + '<span style="font-family:var(--font-mono);font-size:12px;font-weight:700;">'+pos.units.toLocaleString()+unitLbl+' · $'+Math.round(pos.actualDollars).toLocaleString()+'</span>'
+    var groups = groupPicksByLane(LAST_PICKS);
+    var totalDeployed = LAST_PICKS.reduce(function(sum,p){
+      return sum + pickPositionInfo(p, capital, split, t).actualDollars;
+    }, 0);
+
+    function laneRows(items){
+      return items.map(function(p){
+        var pos = pickPositionInfo(p, capital, split, t);
+        var unitLbl = pos.isOption ? 'ct' : 'sh';
+        var detailCell;
+        if(pos.isOption){
+          detailCell = pos.tooSmall
+            ? '<span style="color:var(--red);">too small for 1 contract</span>'
+            : ('<span style="color:var(--sub);">$'+(p.strike!=null?Number(p.strike).toFixed(0):'—')+' '+(p.optionType||'')+' · exp '+(p.expiration||'—')+(pos.dte!=null?' ('+pos.dte+'d)':'')+'</span>');
+        } else {
+          detailCell = '<span style="color:var(--red);">stop $'+pos.stop.toFixed(2)+'</span> · <span style="color:var(--green);">tgt $'+pos.target.toFixed(2)+'</span>';
+        }
+        return '<div style="padding:9px 0;border-bottom:1px solid var(--mist);">'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">'
+            + '<span style="font-weight:700;font-size:13px;">'+p.ticker+'</span>'
+            + '<span style="font-family:var(--font-mono);font-size:12px;font-weight:700;">'+pos.units.toLocaleString()+unitLbl+' · $'+Math.round(pos.actualDollars).toLocaleString()+'</span>'
+          + '</div>'
+          + '<div style="font-family:var(--font-mono);font-size:10.5px;color:var(--sub);">entry $'+pos.entry.toFixed(2)+' · '+detailCell+'</div>'
+        + '</div>';
+      }).join('');
+    }
+
+    var sections = ['stock','etf','option'].map(function(laneKey){
+      var items = groups[laneKey];
+      if(!items.length) return '';
+      var lane = LANE_META[laneKey];
+      return '<div style="margin-bottom:4px;">'
+        + '<div style="display:flex;align-items:center;gap:6px;margin:14px 0 4px;">'
+          + '<span style="width:7px;height:7px;border-radius:2px;background:'+lane.color+';flex-shrink:0;"></span>'
+          + '<span style="font-size:10.5px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;">'+lane.label+'</span>'
         + '</div>'
-        + '<div style="font-family:var(--font-mono);font-size:10.5px;color:var(--sub);">entry $'+pos.entry.toFixed(2)+' · '+riskCell+'</div>'
+        + laneRows(items)
       + '</div>';
     }).join('');
 
     html += '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:16px;margin-bottom:14px;">'
-      + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
         + '<div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;">Picks &amp; trade plan</div>'
         + '<div style="font-family:var(--font-mono);font-size:11px;color:var(--sub);">$'+Math.round(totalDeployed).toLocaleString()+' deployed</div>'
       + '</div>'
-      + rows
+      + sections
     + '</div>';
   } else {
     html += '<div style="font-size:12.5px;color:var(--muted);padding:10px 2px;">No picks generated yet — go back to Step 5 to find some.</div>';
