@@ -45,13 +45,8 @@ input{font-family:inherit;}
 .rail-brand{display:flex;align-items:center;gap:7px;}
 .rail-mark{width:36px;height:36px;flex-shrink:0;}
 .rail-word{font-family:var(--font-display);font-size:22px;font-weight:800;letter-spacing:-.02em;}
-.rail-word em{font-style:normal;color:var(--line);}
+.rail-word em{font-style:normal;color:var(--green);}
 .rail-step-lbl{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);font-weight:500;letter-spacing:.02em;}
-.rail-svg-wrap{width:100%;height:34px;}
-.rail-line-bg{stroke:var(--mist);stroke-width:2;fill:none;}
-.rail-line-fg{stroke:var(--line);stroke-width:2.5;fill:none;stroke-linecap:round;transition:stroke-dasharray .5s cubic-bezier(.4,0,.2,1);}
-.rail-dot{fill:var(--paper);stroke:var(--line);stroke-width:2.5;transition:cx .5s cubic-bezier(.4,0,.2,1), cy .5s cubic-bezier(.4,0,.2,1);}
-.rail-dot-core{fill:var(--line);transition:cx .5s cubic-bezier(.4,0,.2,1), cy .5s cubic-bezier(.4,0,.2,1);}
 
 /* ── SCENES ── */
 .scene{display:none;flex:1;flex-direction:column;padding-top:6px;animation:sceneIn .35s cubic-bezier(.2,.6,.3,1);}
@@ -147,8 +142,8 @@ input{font-family:inherit;}
       <div class="rail-brand">
         <svg class="rail-mark" viewBox="0 0 32 32" fill="none">
           <rect x="0" y="0" width="32" height="32" rx="9" fill="#0A0E1A"/>
-          <path d="M7 23L13.5 15L18 19L26 7" stroke="#5570FF" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="26" cy="7" r="4" fill="#D9A94E"/>
+          <path d="M7 23L13.5 15L18 19L26 7" stroke="#1E8A5C" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="26" cy="7" r="4" fill="#C13B31"/>
         </svg>
         <span class="rail-word">Alpha<em>Line</em></span>
       </div>
@@ -157,20 +152,14 @@ input{font-family:inherit;}
         <button onclick="openAlSettings()" style="color:var(--muted);font-size:16px;padding:2px 4px;margin-left:8px;">⚙</button>
       </div>
     </div>
-    <svg class="rail-svg-wrap" viewBox="0 0 400 34" preserveAspectRatio="none">
-      <path class="rail-line-bg" d="M4 28 L100 22 L200 16 L300 10 L396 4"/>
-      <path class="rail-line-fg" id="rail-line-fg" d="M4 28 L100 22 L200 16 L300 10 L396 4" stroke-dasharray="0 600"/>
-      <circle class="rail-dot" id="rail-dot" cx="4" cy="28" r="6"/>
-      <circle class="rail-dot-core" id="rail-dot-core" cx="4" cy="28" r="2.5"/>
-    </svg>
   </div>
 
   <!-- SCENE 0: HERO -->
   <section class="scene active" id="scene-0">
     <svg class="hero-mark" viewBox="0 0 32 32" fill="none">
       <rect x="0" y="0" width="32" height="32" rx="9" fill="#0A0E1A"/>
-      <path d="M7 23L13.5 15L18 19L26 7" stroke="#5570FF" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="26" cy="7" r="4" fill="#D9A94E"/>
+      <path d="M7 23L13.5 15L18 19L26 7" stroke="#1E8A5C" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="26" cy="7" r="4" fill="#C13B31"/>
     </svg>
     <h1 class="hero-title">One plan.<br/>Built in <em>order</em>.</h1>
     <p class="hero-sub">Capital, risk, split, timeline, a backtest, and real catalysts — one guided line from start to a plan you can act on.</p>
@@ -341,37 +330,18 @@ var CURRENT_STEP = 0;
 var TOTAL_STEPS = 6;
 var STEP_LABELS = ['START','CAPITAL & TIER','SPLIT','TIMELINE','BACKTEST','PICKS','PLAN'];
 
-// Points along the rail path — must match the SVG path's actual geometry
-var RAIL_POINTS = [
-  {x:4,y:28},{x:82,y:23.5},{x:160,y:19},{x:238,y:14.5},{x:316,y:10},{x:396,y:4}
-];
-
 function goToStep(n){
   if(n<0||n>=TOTAL_STEPS+1)return;
   document.querySelectorAll('.scene').forEach(function(s){s.classList.remove('active');});
   document.getElementById('scene-'+n).classList.add('active');
   CURRENT_STEP = n;
   document.getElementById('rail-step-lbl').textContent = n===0 ? 'START' : ('STEP '+n+'/'+TOTAL_STEPS);
-  updateRail(n);
   window.scrollTo({top:0,behavior:'smooth'});
   if(n===2) renderSplitBar();
   if(n===1) renderTierCards();
   if(n===4) runBacktestAndRender();
   if(n===5 && !PICKS_LOADED) renderPicksIntro();
   if(n===6) renderSummary();
-}
-
-function updateRail(n){
-  var idx = Math.min(n, RAIL_POINTS.length-1);
-  var pt = RAIL_POINTS[idx];
-  var path = document.getElementById('rail-line-fg');
-  var totalLen = path.getTotalLength();
-  var frac = idx/(RAIL_POINTS.length-1);
-  path.setAttribute('stroke-dasharray', (totalLen*frac)+' '+totalLen);
-  document.getElementById('rail-dot').setAttribute('cx',pt.x);
-  document.getElementById('rail-dot').setAttribute('cy',pt.y);
-  document.getElementById('rail-dot-core').setAttribute('cx',pt.x);
-  document.getElementById('rail-dot-core').setAttribute('cy',pt.y);
 }
 
 // ══════════════════════════════════════
