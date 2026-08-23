@@ -169,7 +169,8 @@ input{font-family:inherit;}
           <span class="rail-word">Alpha<em>Line</em></span>
         </div>
         <div style="display:flex;align-items:center;">
-          <span class="rail-step-lbl" id="rail-step-lbl">START</span>
+          <a href="https://tapankrath.github.io/GammaEdge/" style="display:flex;align-items:center;gap:3px;color:var(--sub);font-size:10.5px;font-weight:700;padding:5px 8px 5px 6px;background:var(--p1);border:1.5px solid var(--mist);border-radius:20px;text-decoration:none;"><span style="font-size:12px;">←</span>GammaEdge</a>
+          <span class="rail-step-lbl" id="rail-step-lbl" style="margin-left:6px;"></span>
           <button id="tracked-badge" onclick="openTrackedSheet()" style="color:var(--sub);font-size:10.5px;font-weight:700;padding:5px 9px;background:var(--p1);border:1.5px solid var(--mist);border-radius:20px;margin-left:8px;">📊 My Trades</button>
           <button onclick="openAlSettings()" style="color:var(--muted);font-size:16px;padding:2px 4px;margin-left:6px;">⚙</button>
         </div>
@@ -376,7 +377,7 @@ function goToStep(n){
   document.querySelectorAll('.scene').forEach(function(s){s.classList.remove('active');});
   document.getElementById('scene-'+n).classList.add('active');
   CURRENT_STEP = n;
-  document.getElementById('rail-step-lbl').textContent = n===0 ? 'START' : ('STEP '+n+'/'+TOTAL_STEPS);
+  document.getElementById('rail-step-lbl').textContent = n===0 ? '' : (n+'/'+TOTAL_STEPS);
   window.scrollTo({top:0,behavior:'smooth'});
   if(n===2) renderSplitBar();
   if(n===1) renderTierCards();
