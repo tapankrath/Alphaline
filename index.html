@@ -375,7 +375,10 @@ function goToStep(n){
   if(n===1) renderTierCards();
   if(n===4) runBacktestAndRender();
   if(n===5){
-    if(LAST_PICKS && LAST_PICKS.length){ renderPicks(LAST_PICKS); } else { renderPicksIntro(); }
+    if(LAST_PICKS && LAST_PICKS.length){
+      try{ renderPicks(LAST_PICKS); }
+      catch(e){ LAST_PICKS = []; renderPicksIntro(); }
+    } else { renderPicksIntro(); }
   }
   if(n===6) renderSummary();
 }
