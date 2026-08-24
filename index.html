@@ -79,14 +79,13 @@ input{font-family:inherit;}
 .scene-sub{font-size:13.5px;color:var(--sub);line-height:1.55;margin-bottom:22px;max-width:38ch;}
 
 /* ── HERO (scene 0) ── */
-.hero-mark{width:104px;height:104px;margin-bottom:24px;}
-.hero-title{font-family:var(--font-display);font-size:40px;font-weight:600;letter-spacing:-.02em;line-height:1.05;margin-bottom:14px;}
+.hero-title{font-family:var(--font-display);font-size:46px;font-weight:600;letter-spacing:-.02em;line-height:1.08;margin-bottom:18px;margin-top:14px;}
 .hero-title em{font-style:normal;color:var(--line);}
-.hero-sub{font-size:15px;color:var(--sub);line-height:1.6;margin-bottom:8px;max-width:34ch;}
-.hero-steps{margin:26px 0;display:flex;flex-direction:column;gap:14px;}
-.hero-step{display:flex;align-items:baseline;gap:12px;}
-.hero-step-n{font-family:var(--font-mono);font-size:12px;color:var(--line);font-weight:600;flex-shrink:0;width:20px;}
-.hero-step-t{font-size:13.5px;color:var(--ink);font-weight:500;}
+.hero-sub{font-size:16.5px;color:var(--sub);line-height:1.6;margin-bottom:8px;max-width:36ch;}
+.hero-steps{margin:32px 0;display:flex;flex-direction:column;gap:22px;}
+.hero-step{display:flex;align-items:baseline;gap:14px;}
+.hero-step-n{font-family:var(--font-mono);font-size:14px;color:var(--line);font-weight:600;flex-shrink:0;width:24px;}
+.hero-step-t{font-size:16px;color:var(--ink);font-weight:500;}
 .hero-step-t b{font-weight:700;}
 
 /* ── FORM ELEMENTS ── */
@@ -186,11 +185,6 @@ input{font-family:inherit;}
 
   <!-- SCENE 0: HERO -->
   <section class="scene active" id="scene-0">
-    <svg class="hero-mark" viewBox="0 0 32 32" fill="none">
-      <rect x="0" y="0" width="32" height="32" rx="9" fill="#0A0E1A"/>
-      <path d="M7 23L13.5 15L18 19L26 7" stroke="#1E8A5C" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="26" cy="7" r="4" fill="#C13B31"/>
-    </svg>
     <h1 class="hero-title">One plan.<br/>Built in <em>order</em>.</h1>
     <p class="hero-sub">Capital, risk, split, timeline, a backtest, and real catalysts — one guided line from start to a plan you can act on.</p>
     <div class="hero-steps">
@@ -200,6 +194,7 @@ input{font-family:inherit;}
       <div class="hero-step"><span class="hero-step-n">04</span><span class="hero-step-t">Simulated <b>backtest</b> of the plan</span></div>
       <div class="hero-step"><span class="hero-step-n">05</span><span class="hero-step-t">Catalyst-aware <b>picks</b>, AI-researched</span></div>
     </div>
+
     <div class="btn-row">
       <button class="btn btn-primary" onclick="goToStep(1)">Begin</button>
     </div>
