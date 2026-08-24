@@ -1,6 +1,6 @@
 {
-  "name": "AlphaLine",
-  "short_name": "AlphaLine",
+  "name": "AlphaEdge",
+  "short_name": "AlphaEdge",
   "description": "One guided plan from capital to a catalyst-aware, backtested strategy.",
   "start_url": "./index.html",
   "display": "standalone",
