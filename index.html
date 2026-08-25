@@ -377,7 +377,12 @@ function goToStep(n){
   if(n===5){
     if(LAST_PICKS && LAST_PICKS.length){
       try{ renderPicks(LAST_PICKS); }
-      catch(e){ LAST_PICKS = []; renderPicksIntro(); }
+      catch(e){
+        LAST_PICKS = [];
+        renderPicksIntro();
+        var cb = document.getElementById('picks-continue-btn');
+        if(cb) cb.disabled = true;
+      }
     } else { renderPicksIntro(); }
   }
   if(n===6) renderSummary();
@@ -996,8 +1001,6 @@ function groupPicksByLane(picks){
 }
 
 function renderPicks(picks){
-  var continueBtn = document.getElementById('picks-continue-btn');
-  if(continueBtn) continueBtn.disabled = false;
   var mount = document.getElementById('picks-results');
   var capital = parseFloat(document.getElementById('al-capital').value)||25000;
   var split = getCurrentSplit();
@@ -1077,6 +1080,8 @@ function renderPicks(picks){
 
   mount.innerHTML = saveAllBar + html;
   verifyPickPrices(picks);
+  var continueBtn = document.getElementById('picks-continue-btn');
+  if(continueBtn) continueBtn.disabled = false;
 }
 
 var PICKS_BY_IDX = {};
