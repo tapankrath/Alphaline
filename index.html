@@ -340,8 +340,12 @@ input{font-family:inherit;}
       <label class="field-label">Finnhub API Key (optional — verifies pick prices live)</label>
       <input type="password" class="plain-input" id="al-set-fh" placeholder="e.g. c1234..." autocomplete="off"/>
     </div>
+    <div class="field-group">
+      <label class="field-label">Twelve Data API Key (optional — real VIX index, shared with GammaEdge)</label>
+      <input type="password" class="plain-input" id="al-set-td" placeholder="Your Twelve Data key" autocomplete="off"/>
+    </div>
     <button class="btn btn-primary" style="width:100%;" onclick="saveAlSettings()">Save</button>
-    <div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:12px;">Stored locally in your browser only. <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--line);">Get an Anthropic key →</a> · <a href="https://finnhub.io/register" target="_blank" style="color:var(--line);">Get a free Finnhub key →</a></div>
+    <div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:12px;">Stored locally in your browser only. <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--line);">Get an Anthropic key →</a> · <a href="https://finnhub.io/register" target="_blank" style="color:var(--line);">Get a free Finnhub key →</a> · <a href="https://twelvedata.com/register" target="_blank" style="color:var(--line);">Get a free Twelve Data key →</a></div>
   </div>
 </div>
 
@@ -708,12 +712,28 @@ var MKT_SYMBOLS = [
   { label:'NASDAQ', symbol:'QQQ' },
   { label:'S&P 500', symbol:'SPY' },
   { label:'DOW', symbol:'DIA' },
-  { label:'VIX', symbol:'VIX', fallback:'VIXY' }
+  { label:'VIX', symbol:'VIX', fallback:'VIXY', tdSymbol:'VIX' }
 ];
 
 function mktFetchQuote(symbol, fk){
   return fetch('https://finnhub.io/api/v1/quote?symbol='+symbol+'&token='+fk)
     .then(function(r){ return r.json(); })
+    .catch(function(){ return null; });
+}
+// Twelve Data generally supports real index symbols where Finnhub's free
+// tier doesn't — used as a first attempt for real spot VIX. Falls through
+// to the existing VIXY-via-Finnhub path if this fails for any reason
+// (no key, symbol not supported on this plan, network error, etc).
+function mktFetchQuoteTwelveData(symbol, tdKey){
+  return fetch('https://api.twelvedata.com/quote?symbol='+symbol+'&apikey='+tdKey)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(!data || data.status==='error' || data.close==null) return null;
+      var close = parseFloat(data.close);
+      var pct = data.percent_change!=null ? parseFloat(data.percent_change) : 0;
+      if(!close || isNaN(close)) return null;
+      return { c: close, dp: pct };
+    })
     .catch(function(){ return null; });
 }
 function mktQuoteIsValid(q){ return !!(q && q.c != null && q.c !== 0); }
@@ -744,12 +764,21 @@ function mktRenderStrip(){
     + '</div>';
   }).join('');
 
+  var tdk = (typeof tdKey === 'function') ? tdKey() : (localStorage.getItem('ge_td_key')||'').trim();
+
   var fetches = MKT_SYMBOLS.map(function(m){
-    return mktFetchQuote(m.symbol, fk).then(function(q){
-      if(mktQuoteIsValid(q)) return { q:q, usedFallback:false };
-      if(!m.fallback) return { q:null, usedFallback:false };
-      return mktFetchQuote(m.fallback, fk).then(function(q2){
-        return { q: mktQuoteIsValid(q2) ? q2 : null, usedFallback:true };
+    var tdAttempt = (m.tdSymbol && tdk)
+      ? mktFetchQuoteTwelveData(m.tdSymbol, tdk).then(function(q){ return mktQuoteIsValid(q) ? {q:q, source:'td'} : null; })
+      : Promise.resolve(null);
+
+    return tdAttempt.then(function(tdResult){
+      if(tdResult) return { q:tdResult.q, usedFallback:false, source:'td' };
+      return mktFetchQuote(m.symbol, fk).then(function(q){
+        if(mktQuoteIsValid(q)) return { q:q, usedFallback:false, source:'finnhub' };
+        if(!m.fallback) return { q:null, usedFallback:false, source:'finnhub' };
+        return mktFetchQuote(m.fallback, fk).then(function(q2){
+          return { q: mktQuoteIsValid(q2) ? q2 : null, usedFallback:true, source:'finnhub' };
+        });
       });
     }).then(function(result){
       var tile = document.getElementById('mkt-tile-'+m.symbol);
@@ -870,6 +899,7 @@ function saveTrackedPicksList(list){ localStorage.setItem(TRACKED_KEY, JSON.stri
 
 function trackPick(pick, actualPrice){
   var list = loadTrackedPicks();
+  var tier = TIERS.filter(function(x){return x.key===SELECTED_TIER;})[0];
   list.unshift({
     id: Date.now()+'-'+Math.random().toString(36).slice(2,7),
     ticker: pick.ticker,
@@ -878,7 +908,12 @@ function trackPick(pick, actualPrice){
     recordedPrice: actualPrice,
     overridden: Math.abs(actualPrice-pick.assumedPrice) > 0.005,
     catalyst: pick.catalyst||'',
-    savedAt: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+    savedAt: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
+    // Captured so status can be evaluated later using the same rules shown
+    // in the original trade plan — stock/etf uses the tier's stopPct at the
+    // time of saving; options use the fixed 50%/75% rule and their real expiration.
+    stopPctAtSave: tier ? tier.stopPct : 10,
+    expiration: pick.lane==='option' ? (pick.expiration||null) : null
   });
   saveTrackedPicksList(list);
 }
@@ -935,11 +970,50 @@ function renderTrackedPicks(){
         + '<span id="tracked-status-'+e.id+'" class="mono" style="font-size:11px;font-weight:700;color:var(--muted);">loading…</span>'
       + '</div>'
       + '<div style="font-size:11.5px;color:var(--sub);font-weight:600;margin-bottom:9px;">Bought '+e.savedAt+' @ $'+Number(e.recordedPrice).toFixed(2)+(e.overridden?' <span style="color:var(--alpha);font-weight:700;">(adjusted from $'+Number(e.assumedPrice).toFixed(2)+' assumed)</span>':'')+'</div>'
+      + '<div id="tracked-badge-'+e.id+'" style="display:none;"></div>'
       + '<button onclick="removeTrackedPick(\''+e.id+'\')" style="width:100%;background:none;border:1px dashed var(--mist);border-radius:7px;padding:6px;font-size:10px;font-weight:700;color:var(--muted);">Remove</button>'
     + '</div>';
   }).join('');
 
   fetchTrackedCurrentPrices(list);
+}
+
+// Same priority-ordered decision tree as the standalone alert agent, adapted
+// to AlphaEdge's own stop/target formulas: tier-based for stock/etf, fixed
+// 50%/75% for options. Harvest checkpoint defaults to halfway to target,
+// same convention as the agent, for consistency between the two.
+function evaluateTrackedPosition(e, currentPrice){
+  var isOption = e.lane==='option';
+  var entry = e.recordedPrice;
+  var stopPct = isOption ? 50 : (e.stopPctAtSave||10);
+  var targetPct = isOption ? 75 : (e.stopPctAtSave||10)*2;
+  var harvestPct = targetPct/2;
+
+  var stopPrice = isOption ? entry*0.5 : entry*(1-stopPct/100);
+  var targetPrice = isOption ? entry*1.75 : entry*(1+targetPct/100);
+  var harvestPrice = entry*(1+harvestPct/100);
+  var changePct = ((currentPrice-entry)/entry)*100;
+  var dte = isOption ? daysUntil(e.expiration) : null;
+  var isExpiringSoon = dte!=null && dte>=0 && dte<=1;
+
+  var EPS = 0.001; // guards against floating-point precision at exact price boundaries
+
+  if(currentPrice <= stopPrice+EPS){
+    return {level:'STOP', color:'var(--red)', bg:'#FDECEC', text:'🔴 Stop hit — down '+changePct.toFixed(1)+'%. Close it.'};
+  }
+  if(isExpiringSoon){
+    if(currentPrice >= targetPrice-EPS) return {level:'TARGET_EXPIRING', color:'var(--green)', bg:'#EAF6EF', text:'🎯 Target + expiring ('+dte+'d) — take the win now.'};
+    if(currentPrice >= harvestPrice-EPS) return {level:'DECISION', color:'var(--alpha)', bg:'var(--alpha-dim)', text:'🔀 Up '+changePct.toFixed(1)+'%, expires in '+dte+'d — harvest now, or roll if thesis holds?'};
+    if(currentPrice > entry) return {level:'EXPIRING_SMALL', color:'var(--sub)', bg:'var(--paper)', text:'⏰ Small gain, expiring in '+dte+'d — probably just close.'};
+    return {level:'EXPIRING_LOSING', color:'var(--red)', bg:'#FDECEC', text:'⏰ Underwater, expiring in '+dte+"d — close, don't roll a loser."};
+  }
+  if(currentPrice >= targetPrice-EPS){
+    return {level:'TARGET', color:'var(--green)', bg:'#EAF6EF', text:'🟢 Target hit — up '+changePct.toFixed(1)+'%.'};
+  }
+  if(currentPrice >= harvestPrice-EPS){
+    return {level:'HARVEST', color:'var(--alpha)', bg:'var(--alpha-dim)', text:'💰 Harvest level — up '+changePct.toFixed(1)+'%. Consider partial profits.'};
+  }
+  return null; // in normal range, nothing to flag
 }
 
 function fetchTrackedCurrentPrices(list){
@@ -960,6 +1034,16 @@ function fetchTrackedCurrentPrices(list){
       var color = chgPct > 0.05 ? 'var(--green)' : (chgPct < -0.05 ? 'var(--red)' : '#8A6D2F');
       el.style.color = color;
       el.textContent = '$'+q.c.toFixed(2)+' ('+(chgPct>=0?'+':'')+chgPct.toFixed(1)+'%)';
+
+      var badge = document.getElementById('tracked-badge-'+e.id);
+      if(badge){
+        var status = evaluateTrackedPosition(e, q.c);
+        if(status){
+          badge.style.display = 'block';
+          badge.style.cssText += 'background:'+status.bg+';color:'+status.color+';border-radius:8px;padding:8px 10px;margin-bottom:9px;font-size:11.5px;font-weight:700;line-height:1.4;';
+          badge.textContent = status.text;
+        }
+      }
     });
   });
 }
@@ -1229,14 +1313,17 @@ function renderSummary(){
 function openAlSettings(){
   document.getElementById('al-set-ai').value = alphalineAiKey();
   document.getElementById('al-set-fh').value = alphalineFhKey();
+  document.getElementById('al-set-td').value = (localStorage.getItem('ge_td_key')||'').trim();
   document.getElementById('alSettingsOverlay').classList.add('open');
 }
 function closeAlSettings(){ document.getElementById('alSettingsOverlay').classList.remove('open'); }
 function saveAlSettings(){
   var ai = document.getElementById('al-set-ai').value.trim();
   var fh = document.getElementById('al-set-fh').value.trim();
+  var td = document.getElementById('al-set-td').value.trim();
   if(ai) localStorage.setItem('al_ai_key', ai); else localStorage.removeItem('al_ai_key');
   if(fh) localStorage.setItem('al_fh_key', fh); else localStorage.removeItem('al_fh_key');
+  if(td) localStorage.setItem('ge_td_key', td); else localStorage.removeItem('ge_td_key');
   closeAlSettings();
   mktRenderStrip();
 }
