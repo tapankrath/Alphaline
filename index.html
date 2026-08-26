@@ -821,9 +821,16 @@ function runFindPicks(){
   document.getElementById('picks-error').style.display='none';
   document.getElementById('picks-results').innerHTML='';
 
+  var years = duration;
+  var impliedAnnualRate = targetPct; // already annualized as entered
+  var isUnrealistic = impliedAnnualRate > 60; // matches CompoundAI's reality-tier threshold for a repeatable, sustained rate
+
   var prompt = 'Find 4 real, current tickers for a '+t.name.toLowerCase()+'-risk investment plan: pick names that fit the split below (e.g. if options are 0% skip options, if only 1 stock is wanted pick 1, etc — 4 total across the lanes that have capital).\n\n'
     + 'Capital: $'+capital.toLocaleString()+'. Split: '+Math.round(split.stock*100)+'% stocks, '+Math.round(split.etf*100)+'% ETFs, '+Math.round(split.option*100)+'% options. '
     + 'Timeline: '+duration+' years, targeting '+targetPct+'%/yr annualized.\n\n'
+    + (isUnrealistic
+        ? 'This annualized target ('+targetPct+'%/yr) is UNREALISTIC as a sustained, repeatable rate — do not force picks that pretend otherwise. Set "unrealistic":true and "realityNote" in your response explaining plainly why no diversified, repeatable plan reliably compounds at this rate, and what a more realistic target/timeline would look like. Still propose 4 picks fitting the split (people may pursue this anyway), but keep rationale honest about the gap between the picks and the stated target — don\'t oversell.\n\n'
+        : 'Set "unrealistic":false.\n\n')
     + 'For EACH pick, use web search to confirm a real, dated, upcoming catalyst (earnings date, macro event, sector news) — not a generic thesis. Confirm the current price via search too. Use at most 6 searches total, grouped efficiently — do not search each fact separately.\n\n'
     + 'For stock and ETF picks, respond with:\n'
     + '{"ticker":"XYZ","lane":"stock","assumedPrice":123.45,"catalyst":"one sentence, dated and specific","rationale":"one sentence, honest about risk","allocationPct":15}\n\n'
@@ -831,7 +838,7 @@ function runFindPicks(){
     + '{"ticker":"XYZ","lane":"option","optionType":"call|put","strategy":"Long Call|Long Put","strike":150,"expiration":"YYYY-MM-DD","assumedPrice":4.20,"catalyst":"...","rationale":"...","allocationPct":15}\n'
     + 'For options: assumedPrice is the per-share premium (the contract itself costs 100x this). Pick an expiration that lands at least 1-2 weeks AFTER the catalyst date, so the thesis has room to play out without being crushed by imminent theta/IV-crush into the print itself. Strike selection should match the risk tier: '+t.name.toLowerCase()+' tier → '+(t.key==='conservative'?'near-the-money or slightly in-the-money, favoring a higher-delta/lower-leverage contract':t.key==='aggressive'?'slightly out-of-the-money for more leverage, accepting a lower delta':'near-the-money, a balanced delta')+'.\n\n'
     + 'Respond with ONLY valid JSON — your entire reply must be a single JSON object, starting with { and ending with }. No markdown fences, no commentary. Use exactly this schema:\n'
-    + '{"picks":[ ...pick objects as described above... ]}\n'
+    + '{"unrealistic":true|false,"realityNote":"only if unrealistic — one or two honest sentences","picks":[ ...pick objects as described above... ]}\n'
     + 'allocationPct is this pick\'s share of its lane\'s capital (stock/etf/option picks\' allocationPct values need not sum across lanes).';
 
   fetch('https://api.anthropic.com/v1/messages', {
@@ -857,6 +864,14 @@ function runFindPicks(){
       }
       LAST_PICKS = parsed.picks;
       renderPicks(parsed.picks);
+      if(parsed.unrealistic && parsed.realityNote){
+        var resultsMount = document.getElementById('picks-results');
+        var noteHtml = '<div style="background:#FDECEC;border:1.5px solid #F3B8B4;border-radius:12px;padding:13px 15px;margin-bottom:14px;">'
+          + '<div style="font-size:11px;font-weight:800;color:var(--red);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">⚠️ Reality Check</div>'
+          + '<div style="font-size:12.5px;color:var(--ink);line-height:1.5;">'+parsed.realityNote+'</div>'
+        + '</div>';
+        resultsMount.insertAdjacentHTML('afterbegin', noteHtml);
+      }
     })
     .catch(function(e){
       document.getElementById('picks-loading').style.display='none';
