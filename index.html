@@ -81,8 +81,9 @@ input{font-family:inherit;}
 .hero-title{font-family:var(--font-display);font-size:46px;font-weight:600;letter-spacing:-.02em;line-height:1.08;margin-bottom:18px;margin-top:14px;}
 .hero-title em{font-style:normal;color:var(--line);}
 .hero-sub{font-size:16.5px;color:var(--sub);line-height:1.6;margin-bottom:8px;max-width:36ch;}
-.hero-steps{margin:32px 0;display:flex;flex-direction:column;gap:22px;}
-.hero-step{display:flex;align-items:baseline;gap:14px;}
+.hero-steps{margin:32px 0;background:var(--p1);border:1.5px solid var(--mist);border-radius:16px;box-shadow:0 3px 14px rgba(11,15,25,.06), 0 1px 3px rgba(11,15,25,.04);overflow:hidden;}
+.hero-step{display:flex;align-items:baseline;gap:14px;padding:16px 18px;border-bottom:1px solid #EEECE5;}
+.hero-step:last-child{border-bottom:none;}
 .hero-step-n{font-family:var(--font-mono);font-size:14px;color:var(--line);font-weight:600;flex-shrink:0;width:24px;}
 .hero-step-t{font-size:16px;color:var(--ink);font-weight:500;}
 .hero-step-t b{font-weight:700;}
@@ -92,13 +93,13 @@ input{font-family:inherit;}
 .field-label{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:block;}
 .money-input-wrap{position:relative;}
 .money-input-wrap::before{content:'$';position:absolute;left:16px;top:50%;transform:translateY(-50%);font-family:var(--font-mono);font-size:20px;font-weight:600;color:var(--muted);}
-.money-input{width:100%;background:var(--p1);border:1.5px solid var(--mist);border-radius:12px;padding:16px 16px 16px 32px;font-family:var(--font-mono);font-size:22px;font-weight:600;color:var(--ink);outline:none;transition:border-color .15s;}
+.money-input{width:100%;background:var(--p1);border:1.5px solid var(--mist);box-shadow:0 2px 8px rgba(11,15,25,.05);border-radius:12px;padding:16px 16px 16px 32px;font-family:var(--font-mono);font-size:22px;font-weight:600;color:var(--ink);outline:none;transition:border-color .15s;}
 .money-input:focus{border-color:var(--line);}
 .plain-input{width:100%;background:var(--p1);border:1.5px solid var(--mist);border-radius:10px;padding:12px 14px;font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--ink);outline:none;transition:border-color .15s;}
 .plain-input:focus{border-color:var(--line);}
 
 /* ── TIER BLOCK (compact — one block, not three cards) ── */
-.tier-block{background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:6px;}
+.tier-block{background:var(--p1);border:1.5px solid var(--mist);box-shadow:0 2px 8px rgba(11,15,25,.05);border-radius:14px;padding:6px;}
 .tier-seg{display:flex;gap:4px;margin-bottom:2px;}
 .tier-seg-btn{flex:1;padding:10px 6px;border-radius:9px;font-size:12.5px;font-weight:700;color:var(--sub);text-align:center;transition:background .15s,color .15s;}
 .tier-seg-btn.on{color:#fff;}
@@ -674,7 +675,7 @@ function buildFanChart(paths, initialCapital, targetCapital, duration){
     + outerBand + innerBand + gridStart + targetLine + medianLine + medianDot + targetLbl + xNow + xEnd
   + '</svg>';
 
-  return '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:14px;margin-bottom:16px;">'
+  return '<div style="background:var(--p1);border:1.5px solid var(--mist);box-shadow:0 2px 8px rgba(11,15,25,.05);border-radius:14px;padding:14px;margin-bottom:16px;">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
       + '<div style="font-size:10.5px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;">Simulated Paths</div>'
       + '<div style="font-family:var(--font-mono);font-size:10px;color:var(--sub);display:flex;gap:10px;align-items:center;">'
@@ -695,7 +696,7 @@ function renderPicksIntro(){
   var mount = document.getElementById('picks-mount');
   var t = TIERS.filter(function(x){return x.key===SELECTED_TIER;})[0];
   mount.innerHTML =
-    '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:16px;margin-bottom:16px;">'
+    '<div style="background:var(--p1);border:1.5px solid var(--mist);box-shadow:0 2px 8px rgba(11,15,25,.05);border-radius:14px;padding:16px;margin-bottom:16px;">'
     + '<div style="font-size:13px;color:var(--sub);line-height:1.55;margin-bottom:14px;">Finds real, current tickers matching your <b>'+t.name+'</b> tier and split — each with a specific, dated catalyst (earnings, macro event) rather than a generic pick.</div>'
     + '<button class="btn btn-alpha" style="width:100%;" onclick="runFindPicks()">Find Picks</button>'
     + '</div>'
@@ -979,7 +980,7 @@ function renderTrackedPicks(){
 
   mount.innerHTML = list.map(function(e){
     var lane = LANE_META[e.lane]||LANE_META.stock;
-    return '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:12px;padding:13px;margin-bottom:8px;">'
+    return '<div style="background:var(--p1);border:1.5px solid var(--mist);box-shadow:0 2px 8px rgba(11,15,25,.05);border-radius:12px;padding:13px;margin-bottom:8px;">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
         + '<span style="font-family:var(--font-display);font-size:15px;font-weight:600;">'+lane.icon+' '+e.ticker+'</span>'
         + '<span id="tracked-status-'+e.id+'" class="mono" style="font-size:11px;font-weight:700;color:var(--muted);">loading…</span>'
@@ -1148,7 +1149,7 @@ function renderPicks(picks){
         + '</div>';
       }
 
-      return '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:15px;margin-bottom:10px;">'
+      return '<div style="background:var(--p1);border:1.5px solid var(--mist);box-shadow:0 2px 8px rgba(11,15,25,.05);border-radius:14px;padding:15px;margin-bottom:10px;">'
         + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
           + '<div style="font-family:var(--font-display);font-size:17px;font-weight:600;">'+lane.icon+' '+p.ticker+'</div>'
           + '<div style="font-family:var(--font-mono);font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:'+lane.color+'18;color:'+lane.color+';text-transform:uppercase;">'+p.lane+'</div>'
@@ -1255,7 +1256,7 @@ function renderSummary(){
     + '<div class="stat-card-sub">'+targetPct+'%/yr target, '+SELECTED_FREQ.label.toLowerCase()+' rebalancing'+(hitProb!=null?' · backtest hit rate '+hitProb.toFixed(0)+'%':'')+'</div>'
   + '</div>';
 
-  html += '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:16px;margin-bottom:14px;">'
+  html += '<div style="background:var(--p1);border:1.5px solid var(--mist);box-shadow:0 2px 8px rgba(11,15,25,.05);border-radius:14px;padding:16px;margin-bottom:14px;">'
     + '<div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Split</div>'
     + '<div class="split-bar" style="margin:0 0 10px;">'
       + '<div style="width:'+(split.stock*100)+'%;background:#2C3EA8"></div>'
@@ -1308,7 +1309,7 @@ function renderSummary(){
       + '</div>';
     }).join('');
 
-    html += '<div style="background:var(--p1);border:1.5px solid var(--mist);border-radius:14px;padding:16px;margin-bottom:14px;">'
+    html += '<div style="background:var(--p1);border:1.5px solid var(--mist);box-shadow:0 2px 8px rgba(11,15,25,.05);border-radius:14px;padding:16px;margin-bottom:14px;">'
       + '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
         + '<div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;">Picks &amp; trade plan</div>'
         + '<div style="font-family:var(--font-mono);font-size:11px;color:var(--sub);">$'+Math.round(totalDeployed).toLocaleString()+' deployed</div>'
