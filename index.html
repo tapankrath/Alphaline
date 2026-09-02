@@ -292,7 +292,7 @@ input{font-family:inherit;}
   <section class="scene" id="scene-4">
     <div class="eyebrow">Step 04</div>
     <h2 class="scene-h1">Run the <em>backtest</em>.</h2>
-    <p class="scene-sub">A statistical simulation of your plan — not a claim about real historical trades, but a grounded model of how this mix and timeline behaves.</p>
+    <p class="scene-sub" style="margin-bottom:14px;">A statistical simulation of your plan — not a claim about real historical trades, but a grounded model of how this mix and timeline behaves.</p>
     <div id="backtest-mount"></div>
     <div class="btn-row">
       <button class="btn btn-ghost" onclick="goToStep(3)">Back</button>
@@ -629,19 +629,29 @@ function runBacktestAndRender(){
     var fanSvg = buildFanChart(result.samplePaths, capital, targetCapital, duration);
 
     mount.innerHTML =
-      '<div class="stat-card">'
+      '<div class="stat-card" style="margin-bottom:12px;">'
       + '<div class="stat-card-lbl">Median Outcome · '+duration+'yr</div>'
       + '<div class="stat-card-val mono">$'+Math.round(p50).toLocaleString()+'</div>'
       + '<div class="stat-card-sub">Range: $'+Math.round(p10).toLocaleString()+' (P10) to $'+Math.round(p90).toLocaleString()+' (P90) across 1,500 simulated paths</div>'
       + '</div>'
-      + fanSvg
-      + '<div style="background:'+(hitProb>=50?'var(--line-dim)':'#F8E9E7')+';border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
+      + '<div style="background:'+(hitProb>=50?'var(--line-dim)':'#F8E9E7')+';border-radius:12px;padding:12px 15px;margin-bottom:12px;">'
         + '<div style="font-size:12px;font-weight:700;color:'+(hitProb>=50?'var(--line)':'var(--red)')+';margin-bottom:3px;">'+hitProb.toFixed(0)+'% of simulated paths reached your target</div>'
-        + '<div style="font-size:11.5px;color:var(--sub);line-height:1.5;">Target: $'+Math.round(targetCapital).toLocaleString()+' ('+targetPct+'%/yr annualized). This is a statistical model built on broad asset-class assumptions — not a replay of real historical trades.</div>'
-      + '</div>';
+        + '<div style="font-size:11.5px;color:var(--sub);line-height:1.5;">Target: $'+Math.round(targetCapital).toLocaleString()+' ('+targetPct+'%/yr annualized). A statistical model built on broad asset-class assumptions — not a replay of real historical trades.</div>'
+      + '</div>'
+      + '<button type="button" id="fan-toggle-btn" onclick="toggleFanChart()" style="width:100%;background:none;border:1.5px dashed var(--mist);border-radius:10px;padding:11px;font-size:11.5px;font-weight:700;color:var(--sub);margin-bottom:16px;">📈 View simulated-path chart</button>'
+      + '<div id="fan-chart-wrap" style="display:none;">'+fanSvg+'</div>';
 
     document.getElementById('backtest-continue-btn').disabled = false;
   }, 50);
+}
+
+function toggleFanChart(){
+  var wrap = document.getElementById('fan-chart-wrap');
+  var btn = document.getElementById('fan-toggle-btn');
+  if(!wrap) return;
+  var isOpen = wrap.style.display !== 'none';
+  wrap.style.display = isOpen ? 'none' : 'block';
+  if(btn) btn.textContent = isOpen ? '📈 View simulated-path chart' : '📉 Hide chart';
 }
 
 function buildFanChart(paths, initialCapital, targetCapital, duration){
