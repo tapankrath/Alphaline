@@ -127,9 +127,9 @@ input{font-family:inherit;}
 .btn{flex:1;padding:15px;border-radius:12px;font-size:14.5px;font-weight:700;text-align:center;transition:transform .1s, opacity .15s;}
 .btn:active{transform:scale(.98);}
 .btn-primary{background:var(--ink);color:#fff;}
-.btn-primary:disabled{opacity:.35;pointer-events:none;}
-.btn-ghost{background:none;color:var(--sub);border:1.5px solid var(--mist);flex:0 0 auto;padding:15px 20px;}
-.btn-alpha{background:linear-gradient(135deg,var(--alpha),#9C6F2E);color:#fff;}
+.btn-primary:disabled{opacity:.45;pointer-events:none;}
+.btn-ghost{background:none;color:var(--ink);border:1.5px solid var(--ink);flex:0 0 auto;padding:15px 20px;font-weight:800;}
+.btn-alpha{background:var(--ink);color:#fff;}
 
 /* ── FREQUENCY SHEET ── */
 .sheet-overlay{display:none;position:fixed;inset:0;background:rgba(11,15,25,.5);z-index:100;align-items:flex-end;}
@@ -845,7 +845,7 @@ function runFindPicks(){
     + (isUnrealistic
         ? 'This annualized target ('+targetPct+'%/yr) is UNREALISTIC as a sustained, repeatable rate — do not force picks that pretend otherwise. Set "unrealistic":true and "realityNote" in your response explaining plainly why no diversified, repeatable plan reliably compounds at this rate, and what a more realistic target/timeline would look like. Still propose 4 picks fitting the split (people may pursue this anyway), but keep rationale honest about the gap between the picks and the stated target — don\'t oversell.\n\n'
         : 'Set "unrealistic":false.\n\n')
-    + 'For EACH pick, use web search to confirm a real, dated, upcoming catalyst (earnings date, macro event, sector news) — not a generic thesis. Confirm the current price via search too. Use at most 6 searches total, grouped efficiently — do not search each fact separately.\n\n'
+    + 'For EACH pick, use web search to confirm a real, dated, upcoming catalyst (earnings date, macro event, sector news) — not a generic thesis. Also use web search to confirm the CURRENT price/premium for each pick and use that searched value as assumedPrice — do not rely on a remembered price, prices move and your training data lags the present. Use at most 6 searches total, grouped efficiently — do not search each fact separately.\n\n'
     + 'For stock and ETF picks, respond with:\n'
     + '{"ticker":"XYZ","lane":"stock","assumedPrice":123.45,"catalyst":"one sentence, dated and specific","rationale":"one sentence, honest about risk","allocationPct":15}\n\n'
     + 'For option picks, choose one real, liquid, currently-listed contract (a specific strike and expiration you found or can reasonably infer from a real options chain — do not invent expirations that don\'t exist, listed expirations are almost always weekly or monthly and land on a Friday) and respond with:\n'
@@ -1132,6 +1132,77 @@ function groupPicksByLane(picks){
   return groups;
 }
 
+// Builds the trade-plan card body (hedge / option / stock-etf branches).
+// Factored out so verifyPickPrices can rebuild it with a corrected live
+// price when the AI's assumed entry turns out to be stale, instead of
+// leaving a wrong stop/target/size on screen.
+function buildTradePlanBody(p, pos, lane, i){
+  var body;
+  if(pos.isHedge){
+    var dteLbl = pos.dte!=null ? (pos.dte+'d') : '—';
+    body = '<div id="pick-body-'+i+'" style="background:var(--paper);border-radius:10px;padding:10px 12px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;">'
+        + '<span style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;">Hedge plan</span>'
+        + '<span style="font-family:var(--font-mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+lane.color+'18;color:'+lane.color+';">'+(p.strategy||'PROTECTIVE PUT').toUpperCase()+'</span>'
+      + '</div>'
+      + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Strike / Exp</span><span style="font-weight:700;">$'+(p.strike!=null?Number(p.strike).toFixed(2):'—')+' · '+(p.expiration||'—')+' ('+dteLbl+')</span></div>'
+      + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Size</span><span style="font-weight:700;">'+pos.units.toLocaleString()+' contract'+(pos.units===1?'':'s')+' · $'+Math.round(pos.actualDollars).toLocaleString()+'</span></div>'
+      + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Entry (premium)</span><span style="font-weight:700;">$'+pos.entry.toFixed(2)+'/sh</span></div>'
+      + (pos.tooSmall
+          ? '<div style="font-size:11px;color:var(--red);font-weight:600;margin-top:4px;">⚠️ Allocation ($'+Math.round(pos.dollars).toLocaleString()+') is smaller than 1 contract ($'+Math.round(pos.entry*100).toLocaleString()+') at this premium — raise the hedge slice or expect this to sit unfunded.</div>'
+          : '<div style="font-size:12px;font-family:var(--font-mono);"><span style="color:var(--sub);">If a real selloff hits</span> <span style="font-weight:700;color:'+lane.color+';">this is built to pay off multiples of premium</span></div>')
+      + '<div style="font-size:11px;color:var(--sub);line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid var(--mist);">This is insurance, not a trade — expect it to lose value and expire worthless if the market holds up or rises, by design. No stop-loss: don\'t cut it for "underperforming" in a calm market. Re-check before expiration and roll to a new contract if you still want coverage.</div>'
+    + '</div>';
+  } else if(pos.isOption){
+    var strategyLbl = p.strategy || (p.optionType==='put'?'Long Put':'Long Call');
+    var dteLbl2 = pos.dte!=null ? (pos.dte+'d') : '—';
+    body = '<div id="pick-body-'+i+'" style="background:var(--paper);border-radius:10px;padding:10px 12px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;">'
+        + '<span style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;">Trade plan</span>'
+        + '<span style="font-family:var(--font-mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+lane.color+'18;color:'+lane.color+';">'+strategyLbl.toUpperCase()+'</span>'
+      + '</div>'
+      + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Strike / Exp</span><span style="font-weight:700;">$'+(p.strike!=null?Number(p.strike).toFixed(2):'—')+' · '+(p.expiration||'—')+' ('+dteLbl2+')</span></div>'
+      + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Size</span><span style="font-weight:700;">'+pos.units.toLocaleString()+' contract'+(pos.units===1?'':'s')+' · $'+Math.round(pos.actualDollars).toLocaleString()+'</span></div>'
+      + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Entry (premium)</span><span style="font-weight:700;">$'+pos.entry.toFixed(2)+'/sh</span></div>'
+      + (pos.tooSmall
+          ? '<div style="font-size:11px;color:var(--red);font-weight:600;margin-top:4px;">⚠️ Allocation ($'+Math.round(pos.dollars).toLocaleString()+') is smaller than 1 contract ($'+Math.round(pos.entry*100).toLocaleString()+') at this premium — raise this pick\'s allocation or pick a cheaper strike.</div>'
+          : '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;"><span style="color:var(--sub);">Take profit / Cut loss</span><span><span style="font-weight:700;color:var(--green);">+75% ($'+pos.target.toFixed(2)+')</span> <span style="color:var(--muted);">/</span> <span style="font-weight:700;color:var(--red);">-50% ($'+pos.stop.toFixed(2)+')</span></span></div>')
+      + '<div style="font-size:11px;color:var(--sub);line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid var(--mist);">Enter on or just before the catalyst. Close by expiration regardless of outcome — don\'t hold into the last few days of theta decay.</div>'
+    + '</div>';
+  } else {
+    var unitLbl = ' share'+(pos.units===1?'':'s');
+    body = '<div id="pick-body-'+i+'" style="background:var(--paper);border-radius:10px;padding:10px 12px;">'
+      + '<div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;">Position &amp; trade plan</div>'
+      + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Size</span><span style="font-weight:700;">'+pos.units.toLocaleString()+unitLbl+' · $'+Math.round(pos.actualDollars).toLocaleString()+'</span></div>'
+      + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Entry</span><span style="font-weight:700;">$'+pos.entry.toFixed(2)+'</span></div>'
+      + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Stop ('+pos.stopPct.toFixed(0)+'%)</span><span style="font-weight:700;color:var(--red);">$'+pos.stop.toFixed(2)+'</span></div>'
+      + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;"><span style="color:var(--sub);">Target</span><span style="font-weight:700;color:var(--green);">$'+pos.target.toFixed(2)+'</span></div>'
+    + '</div>';
+  }
+  return body;
+}
+
+// When the live quote for a stock/ETF pick differs meaningfully from the
+// AI's assumed entry, rebuild that card's size/stop/target off the live
+// price instead of leaving a stale trade plan on screen, and pre-fill the
+// "your actual price" field so Save uses the corrected number by default.
+function refreshPickBodyWithLivePrice(i, livePrice){
+  var p = PICKS_BY_IDX[i];
+  if(!p) return;
+  var capital = parseFloat(document.getElementById('al-capital').value)||25000;
+  var split = getCurrentSplit();
+  var tier = TIERS.filter(function(x){return x.key===SELECTED_TIER;})[0];
+  var p2 = {};
+  for(var k in p){ if(p.hasOwnProperty(k)) p2[k] = p[k]; }
+  p2.assumedPrice = livePrice;
+  var pos2 = pickPositionInfo(p2, capital, split, tier);
+  var lane = LANE_META[p.lane] || LANE_META.stock;
+  var bodyEl = document.getElementById('pick-body-'+i);
+  if(bodyEl) bodyEl.outerHTML = buildTradePlanBody(p2, pos2, lane, i);
+  var overrideInput = document.getElementById('pick-override-'+i);
+  if(overrideInput) overrideInput.value = Number(livePrice).toFixed(2);
+}
+
 function renderPicks(picks){
   var mount = document.getElementById('picks-results');
   var capital = parseFloat(document.getElementById('al-capital').value)||25000;
@@ -1152,49 +1223,7 @@ function renderPicks(picks){
       var i = globalIdx++;
       PICKS_BY_IDX[i] = p;
       var pos = pickPositionInfo(p, capital, split, tier);
-
-      var body;
-      if(pos.isHedge){
-        var dteLbl = pos.dte!=null ? (pos.dte+'d') : '—';
-        body = '<div style="background:var(--paper);border-radius:10px;padding:10px 12px;">'
-          + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;">'
-            + '<span style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;">Hedge plan</span>'
-            + '<span style="font-family:var(--font-mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+lane.color+'18;color:'+lane.color+';">'+(p.strategy||'PROTECTIVE PUT').toUpperCase()+'</span>'
-          + '</div>'
-          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Strike / Exp</span><span style="font-weight:700;">$'+(p.strike!=null?Number(p.strike).toFixed(2):'—')+' · '+(p.expiration||'—')+' ('+dteLbl+')</span></div>'
-          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Size</span><span style="font-weight:700;">'+pos.units.toLocaleString()+' contract'+(pos.units===1?'':'s')+' · $'+Math.round(pos.actualDollars).toLocaleString()+'</span></div>'
-          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Entry (premium)</span><span style="font-weight:700;">$'+pos.entry.toFixed(2)+'/sh</span></div>'
-          + (pos.tooSmall
-              ? '<div style="font-size:11px;color:var(--red);font-weight:600;margin-top:4px;">⚠️ Allocation ($'+Math.round(pos.dollars).toLocaleString()+') is smaller than 1 contract ($'+Math.round(pos.entry*100).toLocaleString()+') at this premium — raise the hedge slice or expect this to sit unfunded.</div>'
-              : '<div style="font-size:12px;font-family:var(--font-mono);"><span style="color:var(--sub);">If a real selloff hits</span> <span style="font-weight:700;color:'+lane.color+';">this is built to pay off multiples of premium</span></div>')
-          + '<div style="font-size:11px;color:var(--sub);line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid var(--mist);">This is insurance, not a trade — expect it to lose value and expire worthless if the market holds up or rises, by design. No stop-loss: don\'t cut it for "underperforming" in a calm market. Re-check before expiration and roll to a new contract if you still want coverage.</div>'
-        + '</div>';
-      } else if(pos.isOption){
-        var strategyLbl = p.strategy || (p.optionType==='put'?'Long Put':'Long Call');
-        var dteLbl = pos.dte!=null ? (pos.dte+'d') : '—';
-        body = '<div style="background:var(--paper);border-radius:10px;padding:10px 12px;">'
-          + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;">'
-            + '<span style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;">Trade plan</span>'
-            + '<span style="font-family:var(--font-mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+lane.color+'18;color:'+lane.color+';">'+strategyLbl.toUpperCase()+'</span>'
-          + '</div>'
-          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Strike / Exp</span><span style="font-weight:700;">$'+(p.strike!=null?Number(p.strike).toFixed(2):'—')+' · '+(p.expiration||'—')+' ('+dteLbl+')</span></div>'
-          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Size</span><span style="font-weight:700;">'+pos.units.toLocaleString()+' contract'+(pos.units===1?'':'s')+' · $'+Math.round(pos.actualDollars).toLocaleString()+'</span></div>'
-          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Entry (premium)</span><span style="font-weight:700;">$'+pos.entry.toFixed(2)+'/sh</span></div>'
-          + (pos.tooSmall
-              ? '<div style="font-size:11px;color:var(--red);font-weight:600;margin-top:4px;">⚠️ Allocation ($'+Math.round(pos.dollars).toLocaleString()+') is smaller than 1 contract ($'+Math.round(pos.entry*100).toLocaleString()+') at this premium — raise this pick\'s allocation or pick a cheaper strike.</div>'
-              : '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;"><span style="color:var(--sub);">Take profit / Cut loss</span><span><span style="font-weight:700;color:var(--green);">+75% ($'+pos.target.toFixed(2)+')</span> <span style="color:var(--muted);">/</span> <span style="font-weight:700;color:var(--red);">-50% ($'+pos.stop.toFixed(2)+')</span></span></div>')
-          + '<div style="font-size:11px;color:var(--sub);line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid var(--mist);">Enter on or just before the catalyst. Close by expiration regardless of outcome — don\'t hold into the last few days of theta decay.</div>'
-        + '</div>';
-      } else {
-        var unitLbl = ' share'+(pos.units===1?'':'s');
-        body = '<div style="background:var(--paper);border-radius:10px;padding:10px 12px;">'
-          + '<div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;">Position &amp; trade plan</div>'
-          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Size</span><span style="font-weight:700;">'+pos.units.toLocaleString()+unitLbl+' · $'+Math.round(pos.actualDollars).toLocaleString()+'</span></div>'
-          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Entry</span><span style="font-weight:700;">$'+pos.entry.toFixed(2)+'</span></div>'
-          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Stop ('+pos.stopPct.toFixed(0)+'%)</span><span style="font-weight:700;color:var(--red);">$'+pos.stop.toFixed(2)+'</span></div>'
-          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;"><span style="color:var(--sub);">Target</span><span style="font-weight:700;color:var(--green);">$'+pos.target.toFixed(2)+'</span></div>'
-        + '</div>';
-      }
+      var body = buildTradePlanBody(p, pos, lane, i);
 
       return '<div style="background:var(--p1);border:1.5px solid var(--mist);box-shadow:0 2px 8px rgba(11,15,25,.05);border-radius:14px;padding:15px;margin-bottom:10px;">'
         + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
@@ -1263,18 +1292,30 @@ function verifyPickPrices(picks){
   flatOrdered.forEach(function(p,i){
     var mount = document.getElementById('pick-price-'+i);
     if(!mount) return;
+    var isContractPick = (p.lane==='option'||p.lane==='hedge');
     if(!fk){
-      mount.innerHTML = '<div style="font-size:11px;color:var(--muted);">Assumed price: $'+Number(p.assumedPrice).toFixed(2)+' (add a Finnhub key in Settings to verify live)</div>';
+      mount.innerHTML = '<div style="font-size:11px;color:var(--muted);">Assumed '+(isContractPick?'premium':'price')+': $'+Number(p.assumedPrice).toFixed(2)+(isContractPick?'/sh':'')+' (add a Finnhub key in Settings to verify live)</div>';
       return;
     }
     fetch('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(p.ticker)+'&token='+fk)
       .then(function(r){return r.json();})
       .then(function(q){
         if(!q || !q.c){ mount.innerHTML='<div style="font-size:11px;color:var(--muted);">No live quote found for '+p.ticker+'</div>'; return; }
+        if(isContractPick){
+          // p.assumedPrice here is the option/hedge premium per share, not
+          // the underlying's price — comparing the two directly produces
+          // nonsense (e.g. a $9 premium vs a $180 stock reading as "+1700%").
+          // Show the live underlying as context only, no false stale/verified claim.
+          mount.innerHTML = '<div style="font-size:11px;color:var(--sub);">Live '+p.ticker+': $'+Number(q.c).toFixed(2)+' underlying — assumed premium $'+Number(p.assumedPrice).toFixed(2)+'/sh isn\'t quoted here, confirm the actual fill on your broker\'s chain</div>';
+          return;
+        }
         var diff = ((q.c - p.assumedPrice)/p.assumedPrice)*100;
         var stale = Math.abs(diff)>3;
         mount.innerHTML = '<div style="font-size:11px;font-weight:700;color:'+(stale?'var(--red)':'var(--green)')+';">'
-          + (stale?'⚠️ Stale: assumed $':'✓ Verified: assumed $')+Number(p.assumedPrice).toFixed(2)+', live $'+Number(q.c).toFixed(2)+' ('+(diff>=0?'+':'')+diff.toFixed(1)+'%)</div>';
+          + (stale?'⚠️ Stale: assumed $':'✓ Verified: assumed $')+Number(p.assumedPrice).toFixed(2)+', live $'+Number(q.c).toFixed(2)+' ('+(diff>=0?'+':'')+diff.toFixed(1)+'%)'
+          + (stale?' — sizing below corrected to live price':'')
+          + '</div>';
+        if(stale) refreshPickBodyWithLivePrice(i, q.c);
       }).catch(function(){});
   });
 }
