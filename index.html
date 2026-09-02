@@ -246,6 +246,11 @@ input{font-family:inherit;}
       <div class="split-hd"><span class="split-name"><span class="split-dot" style="background:#B4823A"></span>Options</span><span class="split-val mono" id="split-option-val">20%</span></div>
       <input type="range" class="split-slider" id="split-option" min="0" max="100" value="20" oninput="splitChanged('option')"/>
     </div>
+    <div class="split-row">
+      <div class="split-hd"><span class="split-name"><span class="split-dot" style="background:#6B4C9A"></span>🛡️ Hedge</span><span class="split-val mono" id="split-hedge-val">5%</span></div>
+      <input type="range" class="split-slider" id="split-hedge" min="0" max="100" value="5" oninput="splitChanged('hedge')"/>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5;">Downside coverage if the market sells off during your timeline — a protective position sized from this slice, meant to lose a little in normal markets in exchange for paying off if things go south.</div>
+    </div>
 
     <div class="btn-row">
       <button class="btn btn-ghost" onclick="goToStep(1)">Back</button>
@@ -399,13 +404,13 @@ function goToStep(n){
 var TIERS = [
   {key:'conservative', name:'Conservative', badge:'LOWER SWING', color:'#1E8A5C', bg:'#E5F3EB',
    sub:'Capital preservation first. Mostly index exposure, options used sparingly for income.',
-   mix:{stock:20,etf:65,option:15}, stopPct:6},
+   mix:{stock:18,etf:60,option:14,hedge:8}, stopPct:6},
   {key:'moderate', name:'Moderate', badge:'BALANCED', color:'#2C3EA8', bg:'#E7E9F7',
    sub:'A working balance of growth and income across all three lanes.',
-   mix:{stock:40,etf:40,option:20}, stopPct:10},
+   mix:{stock:37,etf:38,option:20,hedge:5}, stopPct:10},
   {key:'aggressive', name:'Aggressive', badge:'WIDER SWING', color:'#B4823A', bg:'#F3E9D6',
    sub:'Growth-first. Heavier options weighting for leverage — wider potential swings both ways.',
-   mix:{stock:35,etf:20,option:45}, stopPct:16}
+   mix:{stock:34,etf:19,option:44,hedge:3}, stopPct:16}
 ];
 var SELECTED_TIER = 'moderate';
 
@@ -426,8 +431,9 @@ function renderTierCards(){
       + '<div style="width:'+t.mix.stock+'%;background:#2C3EA8"></div>'
       + '<div style="width:'+t.mix.etf+'%;background:#1E8A5C"></div>'
       + '<div style="width:'+t.mix.option+'%;background:#B4823A"></div>'
+      + '<div style="width:'+t.mix.hedge+'%;background:#6B4C9A"></div>'
     + '</div>'
-    + '<div class="tier-mix-lbls"><span>Stocks '+t.mix.stock+'%</span><span>ETFs '+t.mix.etf+'%</span><span>Options '+t.mix.option+'%</span></div>';
+    + '<div class="tier-mix-lbls"><span>Stocks '+t.mix.stock+'%</span><span>ETFs '+t.mix.etf+'%</span><span>Options '+t.mix.option+'%</span><span>Hedge '+t.mix.hedge+'%</span></div>';
 }
 
 function selectTier(key){
@@ -436,6 +442,7 @@ function selectTier(key){
   document.getElementById('split-stock').value = t.mix.stock;
   document.getElementById('split-etf').value = t.mix.etf;
   document.getElementById('split-option').value = t.mix.option;
+  document.getElementById('split-hedge').value = t.mix.hedge;
   renderTierCards();
 }
 
@@ -443,7 +450,7 @@ function selectTier(key){
 // STEP 2: DIVERSIFIED SPLIT (auto-rebalancing sliders)
 // ══════════════════════════════════════
 function splitChanged(changed){
-  var ids = {stock:'split-stock', etf:'split-etf', option:'split-option'};
+  var ids = {stock:'split-stock', etf:'split-etf', option:'split-option', hedge:'split-hedge'};
   var vals = {};
   Object.keys(ids).forEach(function(k){ vals[k] = parseFloat(document.getElementById(ids[k]).value)||0; });
 
@@ -456,11 +463,11 @@ function splitChanged(changed){
       vals[k] = Math.round(remaining * (vals[k]/sumOthers));
     });
   } else {
-    // both others were at 0 — split the remainder evenly
+    // all others were at 0 — split the remainder evenly
     others.forEach(function(k){ vals[k] = Math.round(remaining/others.length); });
   }
   // Fix any rounding drift so it always sums to exactly 100
-  var drift = 100 - (vals[changed]+vals[others[0]]+vals[others[1]]);
+  var drift = 100 - Object.keys(ids).reduce(function(s,k){return s+vals[k];},0);
   vals[others[0]] += drift;
 
   Object.keys(ids).forEach(function(k){
@@ -474,20 +481,24 @@ function renderSplitBar(){
   var stock = parseFloat(document.getElementById('split-stock').value)||0;
   var etf = parseFloat(document.getElementById('split-etf').value)||0;
   var option = parseFloat(document.getElementById('split-option').value)||0;
+  var hedge = parseFloat(document.getElementById('split-hedge').value)||0;
   document.getElementById('split-bar').innerHTML =
     '<div style="width:'+stock+'%;background:#2C3EA8"></div>'
     +'<div style="width:'+etf+'%;background:#1E8A5C"></div>'
-    +'<div style="width:'+option+'%;background:#B4823A"></div>';
+    +'<div style="width:'+option+'%;background:#B4823A"></div>'
+    +'<div style="width:'+hedge+'%;background:#6B4C9A"></div>';
   document.getElementById('split-stock-val').textContent = stock+'%';
   document.getElementById('split-etf-val').textContent = etf+'%';
   document.getElementById('split-option-val').textContent = option+'%';
+  document.getElementById('split-hedge-val').textContent = hedge+'%';
 }
 
 function getCurrentSplit(){
   return {
     stock: (parseFloat(document.getElementById('split-stock').value)||0)/100,
     etf: (parseFloat(document.getElementById('split-etf').value)||0)/100,
-    option: (parseFloat(document.getElementById('split-option').value)||0)/100
+    option: (parseFloat(document.getElementById('split-option').value)||0)/100,
+    hedge: (parseFloat(document.getElementById('split-hedge').value)||0)/100
   };
 }
 
@@ -825,9 +836,11 @@ function runFindPicks(){
   var years = duration;
   var impliedAnnualRate = targetPct; // already annualized as entered
   var isUnrealistic = impliedAnnualRate > 60; // matches CompoundAI's reality-tier threshold for a repeatable, sustained rate
+  var hedgePct = Math.round(split.hedge*100);
+  var wantsHedge = hedgePct > 0;
 
   var prompt = 'Find 4 real, current tickers for a '+t.name.toLowerCase()+'-risk investment plan: pick names that fit the split below (e.g. if options are 0% skip options, if only 1 stock is wanted pick 1, etc — 4 total across the lanes that have capital).\n\n'
-    + 'Capital: $'+capital.toLocaleString()+'. Split: '+Math.round(split.stock*100)+'% stocks, '+Math.round(split.etf*100)+'% ETFs, '+Math.round(split.option*100)+'% options. '
+    + 'Capital: $'+capital.toLocaleString()+'. Split: '+Math.round(split.stock*100)+'% stocks, '+Math.round(split.etf*100)+'% ETFs, '+Math.round(split.option*100)+'% options'+(wantsHedge?', '+hedgePct+'% hedge':'')+'. '
     + 'Timeline: '+duration+' years, targeting '+targetPct+'%/yr annualized.\n\n'
     + (isUnrealistic
         ? 'This annualized target ('+targetPct+'%/yr) is UNREALISTIC as a sustained, repeatable rate — do not force picks that pretend otherwise. Set "unrealistic":true and "realityNote" in your response explaining plainly why no diversified, repeatable plan reliably compounds at this rate, and what a more realistic target/timeline would look like. Still propose 4 picks fitting the split (people may pursue this anyway), but keep rationale honest about the gap between the picks and the stated target — don\'t oversell.\n\n'
@@ -838,9 +851,13 @@ function runFindPicks(){
     + 'For option picks, choose one real, liquid, currently-listed contract (a specific strike and expiration you found or can reasonably infer from a real options chain — do not invent expirations that don\'t exist, listed expirations are almost always weekly or monthly and land on a Friday) and respond with:\n'
     + '{"ticker":"XYZ","lane":"option","optionType":"call|put","strategy":"Long Call|Long Put","strike":150,"expiration":"YYYY-MM-DD","assumedPrice":4.20,"catalyst":"...","rationale":"...","allocationPct":15}\n'
     + 'For options: assumedPrice is the per-share premium (the contract itself costs 100x this). Pick an expiration that lands at least 1-2 weeks AFTER the catalyst date, so the thesis has room to play out without being crushed by imminent theta/IV-crush into the print itself. Strike selection should match the risk tier: '+t.name.toLowerCase()+' tier → '+(t.key==='conservative'?'near-the-money or slightly in-the-money, favoring a higher-delta/lower-leverage contract':t.key==='aggressive'?'slightly out-of-the-money for more leverage, accepting a lower delta':'near-the-money, a balanced delta')+'.\n\n'
+    + (wantsHedge
+        ? 'ALSO include exactly ONE hedge pick, on top of the 4 above, sized to the '+hedgePct+'% hedge slice — this is downside coverage for the plan, not a return-seeking position. Pick one real, liquid instrument that pays off in a broad market selloff during the plan\'s '+duration+'-year timeline: a SPY or QQQ protective/long put (5-10% out-of-the-money), or a VIX call for more convex tail-risk coverage. Use a real, currently-listed strike and expiration found or reasonably inferred via search — expirations land on a Friday. If '+duration+' years is longer than typical listed option expirations (usually up to ~2 years out, LEAPS), pick the longest reasonable listed expiration available and say in the rationale that this hedge will need to be re-established / rolled periodically to cover the full timeline. Respond with:\n'
+          + '{"ticker":"SPY","lane":"hedge","optionType":"put","strategy":"Protective Put","strike":540,"expiration":"YYYY-MM-DD","assumedPrice":8.50,"catalyst":"the broad risk being covered — e.g. valuation stretch, rate risk, geopolitical risk — not a single dated event","rationale":"one honest sentence noting this is insurance: expected to lose value / expire worthless if the market holds up or rises, and that\'s by design","allocationPct":100}\n\n'
+        : 'Do not include a hedge pick — the hedge slice is 0%.\n\n')
     + 'Respond with ONLY valid JSON — your entire reply must be a single JSON object, starting with { and ending with }. No markdown fences, no commentary. Use exactly this schema:\n'
-    + '{"unrealistic":true|false,"realityNote":"only if unrealistic — one or two honest sentences","picks":[ ...pick objects as described above... ]}\n'
-    + 'allocationPct is this pick\'s share of its lane\'s capital (stock/etf/option picks\' allocationPct values need not sum across lanes).';
+    + '{"unrealistic":true|false,"realityNote":"only if unrealistic — one or two honest sentences","picks":[ ...pick objects as described above'+(wantsHedge?', including the hedge pick':'')+'... ]}\n'
+    + 'allocationPct is this pick\'s share of its lane\'s capital (stock/etf/option picks\' allocationPct values need not sum across lanes; the hedge pick alone is the whole hedge lane, so its allocationPct is 100).';
 
   fetch('https://api.anthropic.com/v1/messages', {
     method:'POST',
@@ -900,7 +917,8 @@ var LAST_PICKS = [];
 var LANE_META = {
   stock:{icon:'📈',color:'#2C3EA8',label:'Stocks'},
   etf:{icon:'📊',color:'#1E8A5C',label:'ETFs'},
-  option:{icon:'🎯',color:'#B4823A',label:'Options'}
+  option:{icon:'🎯',color:'#B4823A',label:'Options'},
+  hedge:{icon:'🛡️',color:'#6B4C9A',label:'Hedge'}
 };
 
 // ══════════════════════════════════════
@@ -929,7 +947,7 @@ function trackPick(pick, actualPrice){
     // in the original trade plan — stock/etf uses the tier's stopPct at the
     // time of saving; options use the fixed 50%/75% rule and their real expiration.
     stopPctAtSave: tier ? tier.stopPct : 10,
-    expiration: pick.lane==='option' ? (pick.expiration||null) : null
+    expiration: (pick.lane==='option'||pick.lane==='hedge') ? (pick.expiration||null) : null
   });
   saveTrackedPicksList(list);
 }
@@ -1000,19 +1018,28 @@ function renderTrackedPicks(){
 // same convention as the agent, for consistency between the two.
 function evaluateTrackedPosition(e, currentPrice){
   var isOption = e.lane==='option';
+  var isHedge = e.lane==='hedge';
   var entry = e.recordedPrice;
   var stopPct = isOption ? 50 : (e.stopPctAtSave||10);
-  var targetPct = isOption ? 75 : (e.stopPctAtSave||10)*2;
+  var targetPct = isHedge ? 200 : (isOption ? 75 : (e.stopPctAtSave||10)*2);
   var harvestPct = targetPct/2;
 
-  var stopPrice = isOption ? entry*0.5 : entry*(1-stopPct/100);
-  var targetPrice = isOption ? entry*1.75 : entry*(1+targetPct/100);
+  // Hedge has no stop-loss — it's expected to bleed value while the market is
+  // calm, so use -Infinity (never triggers) instead of a normal cut level.
+  var stopPrice = isHedge ? -Infinity : (isOption ? entry*0.5 : entry*(1-stopPct/100));
+  var targetPrice = isHedge ? entry*3 : (isOption ? entry*1.75 : entry*(1+targetPct/100));
   var harvestPrice = entry*(1+harvestPct/100);
   var changePct = ((currentPrice-entry)/entry)*100;
-  var dte = isOption ? daysUntil(e.expiration) : null;
+  var dte = (isOption||isHedge) ? daysUntil(e.expiration) : null;
   var isExpiringSoon = dte!=null && dte>=0 && dte<=1;
 
   var EPS = 0.001; // guards against floating-point precision at exact price boundaries
+
+  if(isHedge){
+    if(currentPrice >= targetPrice-EPS) return {level:'TARGET', color:'var(--green)', bg:'#EAF6EF', text:'🛡️ Paying off — up '+changePct.toFixed(1)+'%. Consider taking the coverage gain.'};
+    if(isExpiringSoon) return {level:'HEDGE_EXPIRING', color:'var(--alpha)', bg:'var(--alpha-dim)', text:'⏰ Hedge expires in '+dte+'d — roll to a new contract if you still want coverage.'};
+    return null; // sitting flat/down in a calm market is the hedge working as intended — nothing to flag
+  }
 
   if(currentPrice <= stopPrice+EPS){
     return {level:'STOP', color:'var(--red)', bg:'#FDECEC', text:'🔴 Stop hit — down '+changePct.toFixed(1)+'%. Close it.'};
@@ -1076,7 +1103,8 @@ function pickPositionInfo(p, capital, split, tier){
   var allocPct = (typeof p.allocationPct==='number' ? p.allocationPct : 0)/100;
   var dollars = laneCapital * allocPct;
   var price = Number(p.assumedPrice)||0;
-  var isOption = p.lane==='option';
+  var isHedge = p.lane==='hedge';
+  var isOption = p.lane==='option' || isHedge; // both are contract-based, priced per-share premium
   var unitCost = isOption ? price*100 : price;
   var units = unitCost>0 ? Math.floor(dollars/unitCost) : 0;
   var actualDollars = units*unitCost;
@@ -1084,18 +1112,22 @@ function pickPositionInfo(p, capital, split, tier){
 
   var stopPct = (tier && tier.stopPct ? tier.stopPct : 10)/100;
   var entry = price;
-  var stop = isOption ? entry*0.5 : entry*(1-stopPct);          // options: cut at ~50% premium loss
-  var target = isOption ? entry*1.75 : entry*(1+stopPct*2);      // options: take profit at ~75% premium gain
+  // Hedge is insurance, not a return-seeking position: no stop-loss (you don't
+  // "cut a loss" on a hedge that's quietly losing value while the market is
+  // fine — that's the position working as intended). Target reflects the
+  // convex payoff if a real selloff hits, not a normal profit-take level.
+  var stop = isHedge ? null : (isOption ? entry*0.5 : entry*(1-stopPct));
+  var target = isHedge ? entry*3 : (isOption ? entry*1.75 : entry*(1+stopPct*2));
   var dte = isOption ? daysUntil(p.expiration) : null;
 
   return {
-    dollars: dollars, actualDollars: actualDollars, units: units, isOption: isOption, tooSmall: tooSmall,
+    dollars: dollars, actualDollars: actualDollars, units: units, isOption: isOption, isHedge: isHedge, tooSmall: tooSmall,
     entry: entry, stop: stop, target: target, stopPct: stopPct*100, dte: dte
   };
 }
 
 function groupPicksByLane(picks){
-  var groups = {stock:[], etf:[], option:[]};
+  var groups = {stock:[], etf:[], option:[], hedge:[]};
   picks.forEach(function(p){ (groups[p.lane]||groups.stock).push(p); });
   return groups;
 }
@@ -1111,7 +1143,7 @@ function renderPicks(picks){
 
   var saveAllBar = '<button class="btn btn-alpha" style="width:100%;margin-bottom:14px;" onclick="saveAllPicks()">💾 Save All to Tracker</button>';
 
-  var html = ['stock','etf','option'].map(function(laneKey){
+  var html = ['stock','etf','option','hedge'].map(function(laneKey){
     var laneItems = groups[laneKey];
     if(!laneItems.length) return '';
     var lane = LANE_META[laneKey];
@@ -1122,7 +1154,22 @@ function renderPicks(picks){
       var pos = pickPositionInfo(p, capital, split, tier);
 
       var body;
-      if(pos.isOption){
+      if(pos.isHedge){
+        var dteLbl = pos.dte!=null ? (pos.dte+'d') : '—';
+        body = '<div style="background:var(--paper);border-radius:10px;padding:10px 12px;">'
+          + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;">'
+            + '<span style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;">Hedge plan</span>'
+            + '<span style="font-family:var(--font-mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:'+lane.color+'18;color:'+lane.color+';">'+(p.strategy||'PROTECTIVE PUT').toUpperCase()+'</span>'
+          + '</div>'
+          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Strike / Exp</span><span style="font-weight:700;">$'+(p.strike!=null?Number(p.strike).toFixed(2):'—')+' · '+(p.expiration||'—')+' ('+dteLbl+')</span></div>'
+          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Size</span><span style="font-weight:700;">'+pos.units.toLocaleString()+' contract'+(pos.units===1?'':'s')+' · $'+Math.round(pos.actualDollars).toLocaleString()+'</span></div>'
+          + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;margin-bottom:4px;"><span style="color:var(--sub);">Entry (premium)</span><span style="font-weight:700;">$'+pos.entry.toFixed(2)+'/sh</span></div>'
+          + (pos.tooSmall
+              ? '<div style="font-size:11px;color:var(--red);font-weight:600;margin-top:4px;">⚠️ Allocation ($'+Math.round(pos.dollars).toLocaleString()+') is smaller than 1 contract ($'+Math.round(pos.entry*100).toLocaleString()+') at this premium — raise the hedge slice or expect this to sit unfunded.</div>'
+              : '<div style="font-size:12px;font-family:var(--font-mono);"><span style="color:var(--sub);">If a real selloff hits</span> <span style="font-weight:700;color:'+lane.color+';">this is built to pay off multiples of premium</span></div>')
+          + '<div style="font-size:11px;color:var(--sub);line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid var(--mist);">This is insurance, not a trade — expect it to lose value and expire worthless if the market holds up or rises, by design. No stop-loss: don\'t cut it for "underperforming" in a calm market. Re-check before expiration and roll to a new contract if you still want coverage.</div>'
+        + '</div>';
+      } else if(pos.isOption){
         var strategyLbl = p.strategy || (p.optionType==='put'?'Long Put':'Long Call');
         var dteLbl = pos.dte!=null ? (pos.dte+'d') : '—';
         body = '<div style="background:var(--paper);border-radius:10px;padding:10px 12px;">'
@@ -1212,7 +1259,7 @@ function saveAllPicks(){
 function verifyPickPrices(picks){
   var fk = alphalineFhKey();
   var groups = groupPicksByLane(picks);
-  var flatOrdered = groups.stock.concat(groups.etf, groups.option);
+  var flatOrdered = groups.stock.concat(groups.etf, groups.option, groups.hedge);
   flatOrdered.forEach(function(p,i){
     var mount = document.getElementById('pick-price-'+i);
     if(!mount) return;
@@ -1262,9 +1309,10 @@ function renderSummary(){
       + '<div style="width:'+(split.stock*100)+'%;background:#2C3EA8"></div>'
       + '<div style="width:'+(split.etf*100)+'%;background:#1E8A5C"></div>'
       + '<div style="width:'+(split.option*100)+'%;background:#B4823A"></div>'
+      + '<div style="width:'+(split.hedge*100)+'%;background:#6B4C9A"></div>'
     + '</div>'
     + '<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;">'
-      + '<span>Stocks '+Math.round(split.stock*100)+'%</span><span>ETFs '+Math.round(split.etf*100)+'%</span><span>Options '+Math.round(split.option*100)+'%</span>'
+      + '<span>Stocks '+Math.round(split.stock*100)+'%</span><span>ETFs '+Math.round(split.etf*100)+'%</span><span>Options '+Math.round(split.option*100)+'%</span><span>Hedge '+Math.round(split.hedge*100)+'%</span>'
     + '</div>'
   + '</div>';
 
@@ -1296,7 +1344,7 @@ function renderSummary(){
       }).join('');
     }
 
-    var sections = ['stock','etf','option'].map(function(laneKey){
+    var sections = ['stock','etf','option','hedge'].map(function(laneKey){
       var items = groups[laneKey];
       if(!items.length) return '';
       var lane = LANE_META[laneKey];
@@ -1374,6 +1422,7 @@ function loadAlPlan(){
     document.getElementById('split-stock').value = Math.round((plan.split.stock||0.4)*100);
     document.getElementById('split-etf').value = Math.round((plan.split.etf||0.4)*100);
     document.getElementById('split-option').value = Math.round((plan.split.option||0.2)*100);
+    document.getElementById('split-hedge').value = Math.round((plan.split.hedge||0.05)*100);
     var freq = FREQ_OPTIONS.filter(function(f){return f.key===plan.freqKey;})[0];
     if(freq){ SELECTED_FREQ = freq; document.getElementById('freq-label').textContent = freq.label+' ('+freq.periodsPerYear+')'; }
     if(plan.picks && plan.picks.length){ LAST_PICKS = plan.picks; }
